@@ -368,10 +368,8 @@ class HgRepo:
                 + ["--logfile", f_msg.name]
             )
 
-    def format(self) -> Optional[List[str]]:
-        """Run `hg fix` to format the currently checked-out stack, reading
-        fileset patterns for each formatter from the `.lando.ini` file in-tree."""
-        # Avoid attempting to autoformat without `.lando.ini` in-tree.
+    def read_lando_config(self) -> Optional[configparser.ConfigParser]:
+        """Attempt to read the `.lando.ini` file."""
         lando_config_path = Path(self.path) / ".lando.ini"
         if not lando_config_path.exists():
             return None
@@ -381,6 +379,16 @@ class HgRepo:
         parser = configparser.ConfigParser(delimiters="=")
         with lando_config_path.open() as f:
             parser.read_file(f)
+
+        return parser
+
+    def format(self) -> Optional[List[str]]:
+        """Run `hg fix` to format the currently checked-out stack, reading
+        fileset patterns for each formatter from the `.lando.ini` file in-tree."""
+        parser = self.read_lando_config()
+        # Avoid attempting to autoformat without `.lando.ini` in-tree.
+        if not parser:
+            return None
 
         # If the file doesn't have a `fix` section, exit early.
         if not parser.has_section("fix"):
