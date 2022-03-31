@@ -432,7 +432,7 @@ class LandingWorker:
                     self.notify_user_of_landing_failure(job)
                     return True
 
-            # Run `hg fix` configured formatters if enabled
+            # Run automated code formatters if enabled.
             if repo.autoformat_enabled:
                 try:
                     replacements = hgrepo.format()

@@ -91,11 +91,8 @@ class Repo:
     @property
     def autoformat_enabled(self) -> bool:
         """Return `True` if formatting is enabled for the repo."""
-        if not self.config_override:
-            # Empty config override always indicates no autoformat.
-            return False
-
-        return any(config.startswith("fix") for config in self.config_override.keys())
+        # TODO
+        raise NotImplementedError("need to implement autoformat enabled/disable")
 
 
 SCM_ALLOW_DIRECT_PUSH = AccessGroup(

@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import shlex
 import shutil
+import subprocess
 import tempfile
 import uuid
 
@@ -132,14 +133,11 @@ class HgRepo:
             f'-o "User {landing_worker_username}" '
             f'-o "Port {landing_worker_target_ssh_port}"'
         ),
+        "extensions.evolve": "",
         "extensions.purge": "",
         "extensions.strip": "",
         "extensions.rebase": "",
         "extensions.set_landing_system": "/app/hgext/set_landing_system.py",
-        # Turn on fix extension for autoformatting, set to abort on failure
-        "extensions.fix": "",
-        "fix.failure": "abort",
-        "hooks.postfix": "python:/app/hgext/postfix_hook.py:postfix_hook",
     }
 
     def __init__(self, path, config=None):
@@ -383,47 +381,42 @@ class HgRepo:
         return parser
 
     def format(self) -> Optional[List[str]]:
-        """Run `hg fix` to format the currently checked-out stack, reading
-        fileset patterns for each formatter from the `.lando.ini` file in-tree."""
-        parser = self.read_lando_config()
-        # Avoid attempting to autoformat without `.lando.ini` in-tree.
-        if not parser:
+        """Format the patch stack for landing."""
+        post_formatting_hashes = []
+
+        # If `mach` is at the root of the repo, we can autoformat.
+        mach = Path(self.path) / "mach"
+        if not mach.exists():
             return None
-
-        # If the file doesn't have a `fix` section, exit early.
-        if not parser.has_section("fix"):
-            return None
-
-        fix_hg_command = []
-        for key, value in parser.items("fix"):
-            if not key.endswith(":pattern"):
-                continue
-
-            fix_hg_command += ["--config", f"fix.{key}={value}"]
-
-        # Exit if we didn't find any patterns.
-        if not fix_hg_command:
-            return None
-
-        # Run the formatters.
-        fix_hg_command += ["fix", "-r", "stack()"]
-        fix_output = self.run_hg(fix_hg_command).splitlines()
-
-        # Update the working directory to the latest change.
-        self.run_hg(["update", "-C", "-r", "tip"])
-
-        # Exit if no revisions were reformatted.
-        pre_formatting_hashes = check_fix_output_for_replacements(fix_output)
-        if not pre_formatting_hashes:
-            return None
-
-        post_formatting_hashes = (
-            self.run_hg(["log", "-r", "stack()", "-T", "{node}\n"])
-            .decode("utf-8")
-            .splitlines()[len(pre_formatting_hashes) - 1 :]
+        
+        # Update to the base of the stack.
+        self.run_hg(
+            ["update", "-r", "first(stack())"],
         )
 
-        logger.info(f"revisions were reformatted: {', '.join(post_formatting_hashes)}")
+        while True:
+            # Get the pre-formatting hash.
+            pre_formatting_hash = self.run_hg(["identify", "-r", ".", "-i"])
+
+            # Run `mach lint` on each commit.
+            subprocess.call([mach, "lint", "-r", "."])
+
+            # Amend the commit to apply changes.
+            self.run_hg(["amend"])
+
+            # Get the post-formatting hash.
+            post_formatting_hash = self.run_hg(["identify", "-r", ".", "-i"])
+            if pre_formatting_hash != post_formatting_hash:
+                # Add to the returned list if changed.
+                post_formatting_hashes.append(post_formatting_hash)
+
+            # Run `hg next` to move to the next commit.
+            try:
+                self.run_hg(["next"])
+            except Exception as e:
+                # TODO use the right exception
+                # Once we can't `hg next`, exit the loop.
+                break
 
         return post_formatting_hashes
 
