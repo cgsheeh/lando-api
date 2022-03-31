@@ -350,7 +350,7 @@ class HgRepo:
             )
 
 
-    def format(self) -> Optional[List[str]]:
+    def format_stack(self) -> Optional[List[str]]:
         """Format the patch stack for landing."""
         post_formatting_hashes = []
 

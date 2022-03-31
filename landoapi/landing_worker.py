@@ -435,7 +435,7 @@ class LandingWorker:
             # Run automated code formatters if enabled.
             if repo.autoformat_enabled:
                 try:
-                    replacements = hgrepo.format()
+                    replacements = hgrepo.format_stack()
 
                     # If autoformatting changed any changesets, note those in the job.
                     if replacements:
