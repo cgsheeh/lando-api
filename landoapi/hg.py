@@ -102,23 +102,6 @@ class PatchConflict(PatchApplicationFailure):
     )
 
 
-def check_fix_output_for_replacements(fix_output: List[bytes]) -> Optional[List[str]]:
-    """Parses `hg fix` output.
-
-    Returns:
-        A list of changeset hashes, or None if no changesets are changed.
-    """
-    for line in fix_output:
-        if not line.startswith(b"REPLACEMENTS: "):
-            continue
-
-        replacements_list = line.split(b"REPLACEMENTS: ", maxsplit=1)[-1].split(b",")
-
-        return [element.decode("latin-1") for element in replacements_list]
-
-    return None
-
-
 class HgRepo:
     ENCODING = "utf-8"
     DEFAULT_CONFIGS = {
@@ -366,19 +349,6 @@ class HgRepo:
                 + ["--logfile", f_msg.name]
             )
 
-    def read_lando_config(self) -> Optional[configparser.ConfigParser]:
-        """Attempt to read the `.lando.ini` file."""
-        lando_config_path = Path(self.path) / ".lando.ini"
-        if not lando_config_path.exists():
-            return None
-
-        # ConfigParser will use `:` as a delimeter unless told otherwise.
-        # We set our keys as `formatter:pattern` so specify `=` as the delimiters.
-        parser = configparser.ConfigParser(delimiters="=")
-        with lando_config_path.open() as f:
-            parser.read_file(f)
-
-        return parser
 
     def format(self) -> Optional[List[str]]:
         """Format the patch stack for landing."""
@@ -396,7 +366,7 @@ class HgRepo:
 
         while True:
             # Get the pre-formatting hash.
-            pre_formatting_hash = self.run_hg(["identify", "-r", ".", "-i"])
+            pre_formatting_hash = self.get_current_node()
 
             # Run `mach lint` on each commit.
             subprocess.call([mach, "lint", "-r", "."])
@@ -405,7 +375,7 @@ class HgRepo:
             self.run_hg(["amend"])
 
             # Get the post-formatting hash.
-            post_formatting_hash = self.run_hg(["identify", "-r", ".", "-i"])
+            post_formatting_hash = self.get_current_node()
             if pre_formatting_hash != post_formatting_hash:
                 # Add to the returned list if changed.
                 post_formatting_hashes.append(post_formatting_hash)
@@ -415,8 +385,15 @@ class HgRepo:
                 self.run_hg(["next"])
             except Exception as e:
                 # TODO use the right exception
-                # Once we can't `hg next`, exit the loop.
-                break
+                if e.message == b"no children":
+                    # TODO `e.message` is wrong
+                    # Once we can't `hg next`, exit the loop.
+                    break
+
+                # Formatting changes mean the previous patch cannot apply.
+                logger.exception(f"Error moving to next patch for {pre_formatting_hash}")
+                logger.exception(e)
+                raise e
 
         return post_formatting_hashes
 
@@ -472,6 +449,10 @@ class HgRepo:
 
         assert len(cset) == 12, cset
         return cset
+
+    def get_current_node(self) -> bytes:
+        """Return the currently checked out node."""
+        return self.run_hg(["identify", "-r", ".", "-i"])
 
     def update_from_upstream(self, source, remote_rev):
         # Pull and update to remote tip.
