@@ -70,6 +70,7 @@ class Repo:
     short_name: str = ""
     legacy_transplant: bool = False
     approval_required: bool = False
+    autoformat_enabled: bool = False
     commit_flags: list[tuple[str, str]] = field(default_factory=list)
     config_override: dict = field(default_factory=dict)
 
@@ -87,12 +88,6 @@ class Repo:
 
         if not self.short_name:
             self.short_name = self.tree
-
-    @property
-    def autoformat_enabled(self) -> bool:
-        """Return `True` if formatting is enabled for the repo."""
-        # TODO
-        raise NotImplementedError("need to implement autoformat enabled/disable")
 
 
 SCM_ALLOW_DIRECT_PUSH = AccessGroup(
@@ -179,7 +174,7 @@ REPO_CONFIG = {
             access_group=SCM_LEVEL_1,
             push_path="ssh://autoland.hg//repos/third-repo",
             pull_path="http://hg.test/third-repo",
-            config_override={"fix.black:command": "black -- -"},
+            autoformat_enabled=True,
             approval_required=True,
         ),
         # Approval is required for the uplift dev repo
@@ -202,7 +197,7 @@ REPO_CONFIG = {
             url="https://hg.mozilla.org/conduit-testing/m-c",
             access_group=SCM_CONDUIT,
             commit_flags=[DONTBUILD],
-            config_override={"fix.black:command": "black -- -"},
+            autoformat_enabled=True,
             approval_required=True,
         ),
         "vct": Repo(
@@ -210,7 +205,7 @@ REPO_CONFIG = {
             url="https://hg.mozilla.org/conduit-testing/vct",
             access_group=SCM_CONDUIT,
             push_bookmark="@",
-            config_override={"fix.black:command": "black -- -"},
+            autoformat_enabled=True,
         ),
     },
     "devsvcprod": {
@@ -251,7 +246,7 @@ REPO_CONFIG = {
             access_group=SCM_LEVEL_3,
             short_name="mozilla-central",
             commit_flags=[DONTBUILD],
-            config_override={"fix.black:command": "black -- -"},
+            autoformat_enabled=True,
         ),
         "comm-central": Repo(
             tree="comm-central",
