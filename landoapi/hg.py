@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import copy
+import configparser
 import logging
 import os
 import shlex
@@ -348,8 +349,29 @@ class HgRepo:
                 + ["--logfile", f_msg.name]
             )
 
+    def read_lando_config(self) -> Optional[configparser.ConfigParser]:
+        """Attempt to read the `.lando.ini` file."""
+        lando_config_path = Path(self.path) / ".lando.ini"
+        if not lando_config_path.exists():
+            return None
+
+        # ConfigParser will use `:` as a delimeter unless told otherwise.
+        # We set our keys as `formatter:pattern` so specify `=` as the delimiters.
+        parser = configparser.ConfigParser(delimiters="=")
+        with lando_config_path.open() as f:
+            parser.read_file(f)
+
+        return parser
+
     def format_stack(self) -> Optional[List[str]]:
         """Format the patch stack for landing."""
+        # Disable autoformatting if `.lando.ini` is missing or not enabled.
+        landoini_config = self.read_lando_config()
+        if not landoini_config or not landoini_config.getboolean(
+            "autoformat", "enabled"
+        ):
+            return None
+
         post_formatting_hashes = []
 
         # If `mach` is at the root of the repo, we can autoformat.
