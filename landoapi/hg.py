@@ -372,8 +372,6 @@ class HgRepo:
         ):
             return None
 
-        post_formatting_hashes = []
-
         # If `mach` is at the root of the repo, we can autoformat.
         mach = Path(self.path) / "mach"
         if not mach.exists():
@@ -383,6 +381,8 @@ class HgRepo:
         self.run_hg(
             ["update", "-r", "first(stack())"],
         )
+
+        post_formatting_hashes = []
 
         while True:
             # Get the pre-formatting hash.
