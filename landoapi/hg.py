@@ -400,8 +400,9 @@ class HgRepo:
                 # Add to the returned list if changed.
                 post_formatting_hashes.append(post_formatting_hash)
 
-            # Run `hg next` to move to the next commit.
             try:
+                # Run `hg next` to move to the next commit. `hg next` handles
+                # rebasing the commit across obsolescence moves.
                 self.run_hg(["next"])
             except hglib.error.CommandError as e:
                 if e.out == b"no children":
