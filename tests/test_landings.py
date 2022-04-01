@@ -428,7 +428,7 @@ def test_format_patch_success_unchanged(
         push_path=hg_server,
         pull_path=hg_server,
         access_group=SCM_LEVEL_3,
-        autoformat_enabled=True,
+        config_override={"fix.fakefmt:command": "cat"},
     )
 
     hgrepo = HgRepo(hg_clone.strpath, config=repo.config_override)
@@ -468,7 +468,10 @@ def test_format_patch_success_changed(
         push_path=hg_server,
         pull_path=hg_server,
         access_group=SCM_LEVEL_3,
-        autoformat_enabled=True,
+        config_override={
+            "fix.fakefmt:command": "python /app/tests/fake_formatter.py",
+            "fix.fakefmt:linerange": "--lines={first}:{last}",
+        },
     )
 
     hgrepo = HgRepo(hg_clone.strpath, config=repo.config_override)
@@ -555,7 +558,10 @@ def test_format_patch_fail(
         url=hg_server,
         push_path=hg_server,
         pull_path=hg_server,
-        autoformat_enabled=True,
+        config_override={
+            # Force failure by setting a formatter that returns exit code 1
+            "fix.fail:command": "exit 1"
+        },
     )
 
     hgrepo = HgRepo(hg_clone.strpath, config=repo.config_override)
@@ -611,7 +617,10 @@ def test_format_patch_no_landoini(
         url=hg_server,
         push_path=hg_server,
         pull_path=hg_server,
-        autoformat_enabled=True,
+        config_override={
+            # If the `.lando.ini` file existed, this formatter would run and fail
+            "fix.fail:command": "exit 1"
+        },
     )
 
     hgrepo = HgRepo(hg_clone.strpath, config=repo.config_override)
