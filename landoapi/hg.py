@@ -367,8 +367,10 @@ class HgRepo:
         """Format the patch stack for landing."""
         # Disable autoformatting if `.lando.ini` is missing or not enabled.
         landoini_config = self.read_lando_config()
-        if not landoini_config or not landoini_config.getboolean(
-            "autoformat", "enabled"
+        if (
+            not landoini_config
+            or not landoini_config.has_section("autoformat")
+            or not landoini_config.getboolean("autoformat", "enabled")
         ):
             return None
 
