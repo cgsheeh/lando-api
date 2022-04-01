@@ -2,17 +2,16 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import copy
-from contextlib import contextmanager
-import configparser
 import logging
 import os
-from pathlib import Path
 import shlex
 import shutil
 import subprocess
 import tempfile
 import uuid
 
+from contextlib import contextmanager
+from pathlib import Path
 from typing import List, Optional
 
 import hglib
@@ -349,7 +348,6 @@ class HgRepo:
                 + ["--logfile", f_msg.name]
             )
 
-
     def format_stack(self) -> Optional[List[str]]:
         """Format the patch stack for landing."""
         post_formatting_hashes = []
@@ -358,7 +356,7 @@ class HgRepo:
         mach = Path(self.path) / "mach"
         if not mach.exists():
             return None
-        
+
         # Update to the base of the stack.
         self.run_hg(
             ["update", "-r", "first(stack())"],
@@ -383,17 +381,17 @@ class HgRepo:
             # Run `hg next` to move to the next commit.
             try:
                 self.run_hg(["next"])
-            except Exception as e:
-                # TODO use the right exception
-                if e.message == b"no children":
-                    # TODO `e.message` is wrong
+            except hglib.error.CommandError as e:
+                if e.out == b"no children":
                     # Once we can't `hg next`, exit the loop.
                     break
 
-                # Formatting changes mean the previous patch cannot apply.
-                logger.exception(f"Error moving to next patch for {pre_formatting_hash}")
+                # Formatting changes caused the patch to be unable to apply.
+                logger.exception(
+                    f"Error moving to next patch for {pre_formatting_hash}"
+                )
                 logger.exception(e)
-                raise e
+                raise HgException.from_hglib_error(e)
 
         return post_formatting_hashes
 
