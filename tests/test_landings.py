@@ -182,7 +182,7 @@ diff --git a/test.txt b/test.txt
 +adding one more line again
 """.strip()
 
-PATCH_FORMATTING_PATTERN = r"""
+PATCH_FORMATTING_PATTERN_PASS = r"""
 # HG changeset patch
 # User Test User <test@example.com>
 # Date 0 0
@@ -191,12 +191,77 @@ PATCH_FORMATTING_PATTERN = r"""
 add formatting config
 
 diff --git a/.lando.ini b/.lando.ini
+new file mode 100644
 --- /dev/null
 +++ b/.lando.ini
 @@ -0,0 +1,3 @@
-+[fix]
-+fakefmt:pattern = set:**.txt
-+fail:pattern = set:**.txt
++[autoformat]
++enabled = True
++
+diff --git a/mach b/mach
+new file mode 100755
+--- /dev/null
++++ b/mach
+@@ -0,0 +1,25 @@
++#!/usr/bin/env python3
++# This Source Code Form is subject to the terms of the Mozilla Public
++# License, v. 2.0. If a copy of the MPL was not distributed with this
++# file, You can obtain one at http://mozilla.org/MPL/2.0/.
++
++# Fake formatter that rewrites text to mOcKiNg cAse
++
++import sys
++
++
++def split_chars(string) -> list:
++    return [char for char in string]
++
++
++if __name__ == "__main__":
++    with open("test.txt") as f:
++        stdin_content = f.read()
++    stdout_content = []
++
++    for i, word in enumerate(split_chars(stdin_content)):
++        stdout_content.append(word.upper() if i % 2 == 0 else word.lower())
++
++    with open("test.txt", "w") as f:
++        f.write(stdout_content)
++    sys.exit(0)
+
+""".strip()
+
+PATCH_FORMATTING_PATTERN_FAIL = r"""
+# HG changeset patch
+# User Test User <test@example.com>
+# Date 0 0
+#      Thu Jan 01 00:00:00 1970 +0000
+# Diff Start Line 7
+add formatting config
+
+diff --git a/.lando.ini b/.lando.ini
+new file mode 100644
+--- /dev/null
++++ b/.lando.ini
+@@ -0,0 +1,3 @@
++[autoformat]
++enabled = True
++
+diff --git a/mach b/mach
+new file mode 100755
+--- /dev/null
++++ b/mach
+@@ -0,0 +1,25 @@
++#!/usr/bin/env python3
++# This Source Code Form is subject to the terms of the Mozilla Public
++# License, v. 2.0. If a copy of the MPL was not distributed with this
++# file, You can obtain one at http://mozilla.org/MPL/2.0/.
++
++# Fake formatter that fails to run.
++import sys
++sys.exit(1)
++
+
 """.strip()
 
 PATCH_FORMATTED_1 = r"""
@@ -433,7 +498,7 @@ def test_format_patch_success_unchanged(
 
     hgrepo = HgRepo(hg_clone.strpath, config=repo.config_override)
 
-    upload_patch(1, patch=PATCH_FORMATTING_PATTERN)
+    upload_patch(1, patch=PATCH_FORMATTING_PATTERN_PASS)
     upload_patch(2, patch=PATCH_FORMATTED_1)
     upload_patch(3, patch=PATCH_FORMATTED_2)
     job = LandingJob(
@@ -473,7 +538,7 @@ def test_format_patch_success_changed(
 
     hgrepo = HgRepo(hg_clone.strpath, config=repo.config_override)
 
-    upload_patch(1, patch=PATCH_FORMATTING_PATTERN)
+    upload_patch(1, patch=PATCH_FORMATTING_PATTERN_PASS)
     upload_patch(2, patch=PATCH_FORMATTED_1)
     upload_patch(3, patch=PATCH_FORMATTED_2)
     job = LandingJob(
@@ -560,7 +625,7 @@ def test_format_patch_fail(
 
     hgrepo = HgRepo(hg_clone.strpath, config=repo.config_override)
 
-    upload_patch(1, patch=PATCH_FORMATTING_PATTERN)
+    upload_patch(1, patch=PATCH_FORMATTING_PATTERN_FAIL)
     upload_patch(2)
     upload_patch(3)
     job = LandingJob(

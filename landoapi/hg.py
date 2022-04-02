@@ -393,8 +393,17 @@ class HgRepo:
             # Run `mach lint` on each commit.
             subprocess.call([mach, "lint", "-r", "."])
 
-            # Amend the commit to apply changes.
-            self.run_hg(["amend"])
+            try:
+                # Amend the commit to apply changes.
+                self.run_hg(["amend"])
+            except hglib.error.CommandError as e:
+                # If `mach lint` doesn't do anything then `amend` will fail.
+                if e.out.strip() != b"nothing changed":
+                    logger.exception(
+                        f"Error trying to amend commit {pre_formatting_hash} after linting."
+                    )
+                    raise HgException.from_hglib_error(e)
+
 
             # Get the post-formatting hash.
             post_formatting_hash = self.get_current_node()
@@ -407,7 +416,7 @@ class HgRepo:
                 # rebasing the commit across obsolescence moves.
                 self.run_hg(["next"])
             except hglib.error.CommandError as e:
-                if e.out == b"no children":
+                if e.err.strip() == b"no children":
                     # Once we can't `hg next`, exit the loop.
                     break
 
