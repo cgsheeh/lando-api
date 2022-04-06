@@ -102,6 +102,11 @@ class PatchConflict(PatchApplicationFailure):
     )
 
 
+class AutoformattingException(HgException):
+    """Exception when autoformatting fails to format a patch stack."""
+    pass
+
+
 class HgRepo:
     ENCODING = "utf-8"
     DEFAULT_CONFIGS = {
@@ -363,35 +368,40 @@ class HgRepo:
 
         return parser
 
-    def format_stack(self) -> Optional[List[str]]:
-        """Format the patch stack for landing."""
-        # Disable autoformatting if `.lando.ini` is missing or not enabled.
-        landoini_config = self.read_lando_config()
-        if (
-            not landoini_config
-            or not landoini_config.has_section("autoformat")
-            or not landoini_config.getboolean("autoformat", "enabled")
-        ):
-            return None
 
-        # If `mach` is at the root of the repo, we can autoformat.
-        mach = Path(self.path) / "mach"
-        if not mach.exists():
-            return None
+    def format_stack_tip(self, mach: Path) -> str:
+        """Add an autoformat commit to the top of the patch stack."""
+        # Update to the tip of the stack.
+        self.run_hg(["update", "-r", "tip"])
 
+        # Run linters.
+        subprocess.run([mach, "lint", "-r", "stack()"], check=True)
+
+        # Create a new commit.
+        commit_message = (
+            "No bug: apply code formatting\n"
+            "\n"
+            "# ignore-this-changeset\n"
+        )
+        self.run_hg(["commit", "-m", commit_message])
+
+        return self.get_current_node().decode("utf-8")
+
+    def format_stack_individually(self, mach: Path) -> List[str]:
+        """Attempt to format each commit in the patch stack individually."""
         # Update to the base of the stack.
         self.run_hg(
             ["update", "-r", "first(stack())"],
         )
 
-        post_formatting_hashes = []
+        post_formatting_hashes: List[str] = []
 
         while True:
             # Get the pre-formatting hash.
-            pre_formatting_hash = self.get_current_node()
+            pre_formatting_hash = self.get_current_node().strip()
 
             # Run `mach lint` on each commit.
-            subprocess.call([mach, "lint", "-r", "."])
+            subprocess.run([mach, "lint", "-r", "."], check=True)
 
             try:
                 # Amend the commit to apply changes.
@@ -406,10 +416,10 @@ class HgRepo:
 
 
             # Get the post-formatting hash.
-            post_formatting_hash = self.get_current_node()
+            post_formatting_hash = self.get_current_node().strip()
             if pre_formatting_hash != post_formatting_hash:
                 # Add to the returned list if changed.
-                post_formatting_hashes.append(post_formatting_hash)
+                post_formatting_hashes.append(post_formatting_hash.decode("utf-8"))
 
             try:
                 # Run `hg next` to move to the next commit. `hg next` handles
@@ -428,6 +438,45 @@ class HgRepo:
                 raise HgException.from_hglib_error(e)
 
         return post_formatting_hashes
+
+    def format_stack(self) -> Optional[List[str]]:
+        """Format the patch stack for landing."""
+        # Disable autoformatting if `.lando.ini` is missing or not enabled.
+        landoini_config = self.read_lando_config()
+        if (
+            not landoini_config
+            or not landoini_config.has_section("autoformat")
+            or not landoini_config.getboolean("autoformat", "enabled")
+        ):
+            return None
+
+        # If `mach` is not at the root of the repo, we can't autoformat.
+        mach = Path(self.path) / "mach"
+        if not mach.exists():
+            return None
+
+        try:
+            # Try formatting each patch individually.
+            return self.format_stack_individually(mach)
+        except (HgException, subprocess.CalledProcessError) as individual_exc:
+            # TODO use the correct exception
+            logger.warning(
+                "Formatting each commit individually failed - falling back to format commit."
+            )
+            logger.exception(individual_exc)
+
+        try:
+            # If formatting each commit has failed, create an autoformatting
+            # commit that fixes each changed file in the stack.
+            return [self.format_stack_tip(mach)]
+        except (HgException, subprocess.CalledProcessError) as tip_exc:
+            # TODO use the correct exception
+            logger.warning("Failed to create an autoformat commit.")
+            logger.exception(tip_exc)
+
+        # If neither autoformatting strategy works, raise.
+        raise AutoformattingException()
+
 
     def push(self, target, bookmark=None):
         if not os.getenv(REQUEST_USER_ENV_VAR):

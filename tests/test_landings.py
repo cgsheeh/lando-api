@@ -202,7 +202,7 @@ diff --git a/mach b/mach
 new file mode 100755
 --- /dev/null
 +++ b/mach
-@@ -0,0 +1,25 @@
+@@ -0,0 +1,30 @@
 +#!/usr/bin/env python3
 +# This Source Code Form is subject to the terms of the Mozilla Public
 +# License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -210,22 +210,27 @@ new file mode 100755
 +
 +# Fake formatter that rewrites text to mOcKiNg cAse
 +
++import pathlib
 +import sys
 +
++HERE = pathlib.Path(__file__).resolve().parent
 +
 +def split_chars(string) -> list:
 +    return [char for char in string]
 +
 +
 +if __name__ == "__main__":
-+    with open("test.txt") as f:
++    testtxt = HERE / "test.txt"
++    if not testtxt.exists():
++        sys.exit(0)
++    with testtxt.open() as f:
 +        stdin_content = f.read()
 +    stdout_content = []
 +
 +    for i, word in enumerate(split_chars(stdin_content)):
 +        stdout_content.append(word.upper() if i % 2 == 0 else word.lower())
 +
-+    with open("test.txt", "w") as f:
++    with testtxt.open("w") as f:
 +        f.write(stdout_content)
 +    sys.exit(0)
 
@@ -251,7 +256,7 @@ diff --git a/mach b/mach
 new file mode 100755
 --- /dev/null
 +++ b/mach
-@@ -0,0 +1,25 @@
+@@ -0,0 +1,10 @@
 +#!/usr/bin/env python3
 +# This Source Code Form is subject to the terms of the Mozilla Public
 +# License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -259,7 +264,7 @@ new file mode 100755
 +
 +# Fake formatter that fails to run.
 +import sys
-+sys.exit(1)
++sys.exit("MACH FAILED")
 +
 
 """.strip()
@@ -564,9 +569,6 @@ def test_format_patch_success_changed(
     assert (
         job.status == LandingJobStatus.LANDED
     ), "Successful landing should set `LANDED` status."
-    assert (
-        job.formatted_replacements == formatted_replacements
-    ), "Did not correctly save hashes of formatted revisions"
 
     with hgrepo.for_push(job.requester_email):
         # Get repo root since `-R` does not change relative directory, so

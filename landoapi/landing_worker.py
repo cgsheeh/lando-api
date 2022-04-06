@@ -17,6 +17,7 @@ from flask import current_app
 
 from landoapi import patches
 from landoapi.hg import (
+    AutoformattingException,
     HgRepo,
     LostPushRace,
     NoDiffStartLine,
@@ -441,7 +442,7 @@ class LandingWorker:
                     if replacements:
                         job.formatted_replacements = replacements
 
-                except hglib.error.CommandError as exc:
+                except AutoformattingException as exc:
                     message = (
                         "Lando failed to format your patch for conformity with our "
                         "formatting policy. Please see the details below.\n\n"
