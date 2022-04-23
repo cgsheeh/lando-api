@@ -22,14 +22,18 @@ def test_uplift_creation(
             transactions = {t["type"]: t["value"] for t in transactions}
 
             # Check the expected transactions
-            assert transactions == {
+            expected = {
                 "update": "PHID-DIFF-1",
                 "title": "Add feature XXX",
-                "summary": "some really complex stuff\nNOTE: Uplifted from D1",
+                "summary": (
+                    "some really complex stuff\n"
+                    "Original Revision: http://phabricator.test/D1"
+                ),
                 "bugzilla.bug-id": "",
-                "comment": "Here are all the details about my uplift request...",
-                "reviewers.add": ["PHID-PROJ-0"],
+                "reviewers.add": ["blocking(PHID-PROJ-0)"],
             }
+            for key in expected:
+                assert transactions[key] == expected[key], f"{key} does not match"
 
             # Create a new revision
             new_rev = phabdouble.revision(
@@ -77,7 +81,10 @@ def test_uplift_creation(
     headers.update(auth0_mock.mock_headers)
     response = client.post("/uplift", json=payload, headers=headers)
     assert response.status_code == 400
-    assert response.json["title"] == "No valid uplift repository"
+    assert (
+        response.json["title"]
+        == "Repository mozilla-central is not a repository known to Lando."
+    )
 
     # Only one revision at first
     assert len(phabdouble._revisions) == 1
@@ -94,44 +101,13 @@ def test_uplift_creation(
         "revision_id": 2,
         "revision_phid": "PHID-DREV-1",
         "url": "http://phabricator.test/D2",
-    }
+    }, "the failing line"
 
     # Now we have a new uplift revision on Phabricator
     assert len(phabdouble._revisions) == 2
     new_rev = phabdouble._revisions[-1]
     assert new_rev["title"] == "Add feature XXX"
-    assert new_rev["summary"] == "some really complex stuff\nNOTE: Uplifted from D1"
-
-
-def test_approval_creation(
-    db, phabdouble, client, auth0_mock, mock_repo_config, release_management_project
-):
-    repo = phabdouble.repo(name="mozilla-uplift")
-    revision = phabdouble.revision(repo=repo)
-    user = phabdouble.user(username="JohnDoe")
-
-    payload = {
-        "revision_id": revision["id"],
-        "repository": repo["shortName"],
-        "form_content": "Here are all the details about my approval request...",
-    }
-    headers = {"X-Phabricator-API-Key": user["apiKey"]}
-    headers.update(auth0_mock.mock_headers)
-
-    # Only one revision at first
-    assert len(phabdouble._revisions) == 1
-
-    # Valid approval request
-    response = client.post("/uplift", json=payload, headers=headers)
-    assert response.status_code == 201
-    assert response.json == {
-        "mode": "approval",
-        "revision_id": 1,
-        "revision_phid": "PHID-DREV-0",
-        "url": "http://phabricator.test/D1",
-    }
-
-    # We still have the same revision
-    assert len(phabdouble._revisions) == 1
-    new_rev = phabdouble._revisions[0]
-    assert new_rev["title"] == "my test revision title"
+    assert (
+        new_rev["summary"]
+        == "some really complex stuff\nOriginal Revision: http://phabricator.test/D1"
+    )

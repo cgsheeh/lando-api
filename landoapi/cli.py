@@ -61,15 +61,18 @@ def init(init_s3):
 
     db.create_all()
     alembic.stamp("head")
+    logging.info("created lando db")
 
     # Create a fake S3 bucket, ie for moto.
     if init_s3:
+        patch_bucket = os.environ["PATCH_BUCKET_NAME"]
         s3 = patches.create_s3(
             aws_access_key=os.environ["AWS_ACCESS_KEY"],
             aws_secret_key=os.environ["AWS_SECRET_KEY"],
             endpoint_url=os.environ["S3_ENDPOINT_URL"],
         )
-        s3.create_bucket(Bucket=os.environ["PATCH_BUCKET_NAME"])
+        s3.create_bucket(Bucket=patch_bucket)
+        logging.info(f"created s3 bucket {patch_bucket}")
 
 
 @cli.command(context_settings=dict(ignore_unknown_options=True))

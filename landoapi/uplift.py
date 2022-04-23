@@ -40,41 +40,32 @@ def get_release_managers(phab: PhabricatorClient) -> dict:
 
 def check_approval_state(
     phab: PhabricatorClient, revision_id: int, target_repository_name: str
-) -> Tuple[bool, dict, dict]:
-    """Helper to load the Phabricator revision and check its approval requirement state
-
-    * if the revision's target repository is the same as its current
-      repository, it's an approval
-    * otherwise it's an uplift request
-    """
-
+) -> Tuple[dict, dict]:
     # Load target repo from Phabricator
     target_repo = phab.call_conduit(
         "diffusion.repository.search",
         constraints={"shortNames": [target_repository_name]},
     )
     target_repo = phab.single(target_repo, "data")
-    target_repo_phid = phab.expect(target_repo, "phid")
 
     # Load base revision details from Phabricator
     revision = phab.call_conduit(
         "differential.revision.search", constraints={"ids": [revision_id]}
     )
     revision = phab.single(revision, "data")
-    revision_repo_phid = phab.expect(revision, "fields", "repositoryPHID")
 
-    # Lookup if this is an uplift or an approval request
-    is_approval = target_repo_phid == revision_repo_phid
-    return is_approval, revision, target_repo
+    return revision, target_repo
 
 
 def create_uplift_revision(
     phab: PhabricatorClient,
     source_revision: dict,
     target_repository: dict,
-    form_content: str,
-):
-    """Create a new revision on a repository, cloning a diff from another repo"""
+) -> dict:
+    """Create a new revision on a repository, cloning a diff from another repo.
+
+    Returns a `dict` to be returned as JSON from the uplift API.
+    """
     # Check the target repository needs an approval
     repos = get_repos_for_env(current_app.config.get("ENVIRONMENT"))
     local_repo = repos.get(target_repository["fields"]["shortName"])
@@ -135,7 +126,7 @@ def create_uplift_revision(
                     "authorEmail": phab.expect(commit, "author", "email"),
                     "time": 0,
                     "message": phab.expect(commit, "message"),
-                    "commit": phab.expect(commit, "identifier"),
+                    "rev": phab.expect(commit, "identifier"),
                     "tree": None,
                     "parents": phab.expect(commit, "parents"),
                 }
@@ -145,8 +136,9 @@ def create_uplift_revision(
     )
 
     # Append an uplift mention to the summary
-    summary = phab.expect(source_revision, "fields", "summary")
-    summary += f"\nNOTE: Uplifted from D{source_revision['id']}"
+    summary = str(phab.expect(source_revision, "fields", "summary"))
+    summary += f"\nOriginal Revision: {phab.url_base}/D{source_revision['id']}"
+    summary = summary.strip()
 
     # Finally create the revision to link all the pieces
     new_rev = phab.call_conduit(
@@ -157,9 +149,10 @@ def create_uplift_revision(
             {"type": "title", "value": phab.expect(source_revision, "fields", "title")},
             {"type": "summary", "value": summary},
             # Set release managers as reviewers
-            {"type": "reviewers.add", "value": [release_managers["phid"]]},
-            # Post the form as a comment on the revision
-            {"type": "comment", "value": form_content},
+            {
+                "type": "reviewers.add",
+                "value": [f"blocking({release_managers['phid']})"],
+            },
             # Copy Bugzilla id
             {
                 "type": "bugzilla.bug-id",
@@ -182,34 +175,6 @@ def create_uplift_revision(
         "revision_phid": new_rev_phid,
         "diff_id": new_diff_id,
         "diff_phid": new_diff_phid,
-    }
-
-
-def create_approval_request(phab: PhabricatorClient, revision: dict, form_content: str):
-    """Update an existing revision with reviewers & form comment"""
-    release_managers = get_release_managers(phab)
-
-    rev = phab.call_conduit(
-        "differential.revision.edit",
-        objectIdentifier=revision["phid"],
-        transactions=[
-            # Set release managers as reviewers
-            {"type": "reviewers.add", "value": [release_managers["phid"]]},
-            # Post the form as a comment on the revision
-            {"type": "comment", "value": form_content},
-        ],
-    )
-    rev_id = phab.expect(rev, "object", "id")
-    rev_phid = phab.expect(rev, "object", "phid")
-    assert rev_id == revision["id"], "Revision id mismatch"
-
-    logger.info("Updated Phabricator revision", extra={"id": rev_id, "phid": rev_phid})
-
-    return {
-        "mode": "approval",
-        "url": f"{phab.url_base}/D{rev_id}",
-        "revision_id": rev_id,
-        "revision_phid": rev_phid,
     }
 
 
