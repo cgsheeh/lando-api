@@ -101,7 +101,7 @@ def test_uplift_creation(
         "revision_id": 2,
         "revision_phid": "PHID-DREV-1",
         "url": "http://phabricator.test/D2",
-    }, "the failing line"
+    }
 
     # Now we have a new uplift revision on Phabricator
     assert len(phabdouble._revisions) == 2
