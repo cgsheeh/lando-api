@@ -61,7 +61,13 @@ def create(data):
     )
 
     try:
-        output = create_uplift_revision(g.phabricator, revision, target_repository)
+        output = {}
+        for revision in revisions:
+            rev = create_uplift_revision(
+                g.phabricator, revision, target_repository
+            )
+            # TODO id is wrong here
+            output[rev["id"]] = rev
     except Exception as e:
         logger.error(
             "Failed to create an uplift request",

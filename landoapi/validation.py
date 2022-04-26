@@ -8,7 +8,7 @@ from connexion import ProblemException
 REVISION_ID_RE = re.compile(r"^D(?P<id>[1-9][0-9]*)$")
 
 
-def revision_id_to_int(revision_id):
+def revision_id_to_int(revision_id: str) -> int:
     m = REVISION_ID_RE.match(revision_id)
     if m is None:
         raise ProblemException(

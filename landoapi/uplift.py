@@ -88,6 +88,8 @@ def get_uplift_conduit_state(
     )
     target_repo = phab.single(target_repo, "data")
 
+    revision_data = request_extended_revision_data(phab, revisions)
+
     # Load base revision details from Phabricator
     revision = phab.call_conduit(
         "differential.revision.search", constraints={"ids": [revision_id]}
