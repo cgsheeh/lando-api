@@ -3,6 +3,36 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from landoapi.phabricator import PhabricatorClient
+from landoapi.uplift import move_drev_to_original
+
+
+def test_move_drev_to_original():
+    # Ensure `Differential Revision` is moved to `Original`.
+    commit_message = (
+        "bug 1: title r?reviewer\n"
+        "\n"
+        "Differential Revision: http://phabricator.test/D1"
+    )
+    expected = (
+        "bug 1: title r?reviewer\n\nOriginal Revision: http://phabricator.test/D1"
+    )
+    message = move_drev_to_original(commit_message)
+    assert (
+        message == expected
+    ), "`Differential Revision` not re-written to `Original Revision` on uplift."
+
+    # Ensure `Original` and `Differential` in commit message is left unchanged.
+    commit_message = (
+        "bug 1: title r?reviewer\n"
+        "\n"
+        "Original Revision: http://phabricator.test/D1\n"
+        "\n"
+        "Differential Revision: http://phabricator.test/D2"
+    )
+    message = move_drev_to_original(commit_message)
+    assert (
+        message == commit_message
+    ), "Commit message should not have changed when original revision already present."
 
 
 def test_uplift_creation(
@@ -27,6 +57,7 @@ def test_uplift_creation(
                 "title": "Add feature XXX",
                 "summary": (
                     "some really complex stuff\n"
+                    "\n"
                     "Original Revision: http://phabricator.test/D1"
                 ),
                 "bugzilla.bug-id": "",
@@ -54,7 +85,12 @@ def test_uplift_creation(
     monkeypatch.setattr(PhabricatorClient, "call_conduit", _call_conduit)
 
     revision = phabdouble.revision(
-        title="Add feature XXX", summary="some really complex stuff"
+        title="Add feature XXX",
+        summary=(
+            "some really complex stuff\n"
+            "\n"
+            "Differential Revision: http://phabricator.test/D1"
+        ),
     )
     repo_mc = phabdouble.repo()
     user = phabdouble.user(username="JohnDoe")
@@ -109,5 +145,5 @@ def test_uplift_creation(
     assert new_rev["title"] == "Add feature XXX"
     assert (
         new_rev["summary"]
-        == "some really complex stuff\nOriginal Revision: http://phabricator.test/D1"
+        == "some really complex stuff\n\nOriginal Revision: http://phabricator.test/D1"
     )

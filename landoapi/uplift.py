@@ -2,8 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import logging
 import json
+import logging
+import re
 
 from typing import (
     Optional,
@@ -20,6 +21,48 @@ from landoapi.stacks import request_extended_revision_data
 
 
 logger = logging.getLogger(__name__)
+
+
+ARC_DIFF_REV_RE = re.compile(
+    r"^\s*Differential Revision:\s*(?P<phab_url>https?://.+)/D(?P<rev>\d+)\s*$",
+    flags=re.MULTILINE,
+)
+ORIGINAL_DIFF_REV_RE = re.compile(
+    r"^\s*Original Revision:\s*(?P<phab_url>https?://.+)/D(?P<rev>\d+)\s*$",
+    flags=re.MULTILINE,
+)
+
+
+def move_drev_to_original(body: str) -> str:
+    """Handle moving the `Differential Revision` line.
+
+    Moves the `Differential Revision` line to `Original Revision`, if a link
+    to the original revision does not already exist. If the `Original Revision`
+    line does exist, scrub the `Differential Revision` line.
+
+    Args:
+        body: `str` text of the commit message.
+        rev_id: `int` parsed integer representing the drev number for the revision.
+
+    Returns:
+        tuple of:
+            New commit message body text as `str`,
+            Revision id as `int`, or `None` if a new revision should be created.
+    """
+    differential_revision = ARC_DIFF_REV_RE.search(body)
+    original_revision = ORIGINAL_DIFF_REV_RE.search(body)
+
+    # If both match, we already have an `Original Revision` line.
+    if differential_revision and original_revision:
+        return body
+
+    def repl(match):
+        phab_url = match.group("phab_url")
+        rev = match.group("rev")
+        return f"\nOriginal Revision: {phab_url}/D{rev}"
+
+    # Update the commit message and set the `rev-id` to `None`.
+    return ARC_DIFF_REV_RE.sub(repl, body)
 
 
 def get_uplift_request_form(revision) -> Optional[str]:
@@ -135,10 +178,9 @@ def create_uplift_revision(
         ),
     )
 
-    # Append an uplift mention to the summary
+    # Update `Differential Revision` to `Original Revision`.
     summary = str(phab.expect(source_revision, "fields", "summary"))
-    summary += f"\nOriginal Revision: {phab.url_base}/D{source_revision['id']}"
-    summary = summary.strip()
+    summary = move_drev_to_original(summary)
 
     # Finally create the revision to link all the pieces
     new_rev = phab.call_conduit(
