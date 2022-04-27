@@ -81,7 +81,7 @@ def get_release_managers(phab: PhabricatorClient) -> dict:
     return phab.single(groups, "data")
 
 
-def check_approval_state(
+def get_uplift_conduit_state(
     phab: PhabricatorClient, revision_id: int, target_repository_name: str
 ) -> Tuple[dict, dict]:
     # Load target repo from Phabricator

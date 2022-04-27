@@ -11,7 +11,7 @@ from landoapi import auth
 from landoapi.repos import get_repos_for_env
 from landoapi.uplift import (
     create_uplift_revision,
-    check_approval_state,
+    get_uplift_conduit_state,
 )
 from landoapi.decorators import require_phabricator_api_key
 
@@ -50,7 +50,7 @@ def create(data):
             "target_repository": repo_name,
         },
     )
-    revision, target_repository = check_approval_state(
+    revision, target_repository = get_uplift_conduit_state(
         g.phabricator,
         revision_id=revision_id,
         target_repository_name=repo_name,
