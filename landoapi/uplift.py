@@ -42,12 +42,9 @@ def move_drev_to_original(body: str) -> str:
 
     Args:
         body: `str` text of the commit message.
-        rev_id: `int` parsed integer representing the drev number for the revision.
 
     Returns:
-        tuple of:
-            New commit message body text as `str`,
-            Revision id as `int`, or `None` if a new revision should be created.
+        New commit message body text as `str`,
     """
     differential_revision = ARC_DIFF_REV_RE.search(body)
     original_revision = ORIGINAL_DIFF_REV_RE.search(body)
