@@ -44,7 +44,7 @@ def move_drev_to_original(body: str) -> str:
         body: `str` text of the commit message.
 
     Returns:
-        New commit message body text as `str`,
+        New commit message body text as `str`.
     """
     differential_revision = ARC_DIFF_REV_RE.search(body)
     original_revision = ORIGINAL_DIFF_REV_RE.search(body)
