@@ -58,7 +58,7 @@ def move_drev_to_original(body: str) -> str:
         rev = match.group("rev")
         return f"\nOriginal Revision: {phab_url}/D{rev}"
 
-    # Update the commit message and set the `rev-id` to `None`.
+    # Update the commit message.
     return ARC_DIFF_REV_RE.sub(repl, body)
 
 
