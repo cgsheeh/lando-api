@@ -27,7 +27,7 @@ def create(data):
     # Validate repository.
     all_repos = get_repos_for_env(current_app.config.get("ENVIRONMENT"))
     repository = all_repos.get(repo_name)
-    if repository is None or not repository.approval_required:
+    if repository is None:
         return problem(
             400,
             f"Repository {repo_name} is not a repository known to Lando.",

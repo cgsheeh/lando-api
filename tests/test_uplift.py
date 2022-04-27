@@ -83,7 +83,7 @@ def test_uplift_creation(
     assert response.status_code == 400
     assert (
         response.json["title"]
-        == "Repository mozilla-central is not a repository known to Lando."
+        == "Repository mozilla-central is not an uplift repository."
     )
 
     # Only one revision at first
