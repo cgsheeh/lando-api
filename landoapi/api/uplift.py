@@ -8,10 +8,15 @@ from connexion import problem
 from flask import current_app, g
 
 from landoapi import auth
+from landoapi.phabricator import PhabricatorClient
 from landoapi.repos import get_repos_for_env
 from landoapi.uplift import (
     create_uplift_revision,
+    get_release_managers,
     get_uplift_conduit_state,
+)
+from landoapi.stacks import (
+    RevisionData,
 )
 from landoapi.decorators import require_phabricator_api_key
 
@@ -23,6 +28,7 @@ logger = logging.getLogger(__name__)
 def create(data):
     """Create new uplift requests for requested repository & revision"""
     repo_name, revision_id = data["repository"], data["revision_id"]
+    phab: PhabricatorClient = g.phabricator
 
     # Validate repository.
     all_repos = get_repos_for_env(current_app.config.get("ENVIRONMENT"))
@@ -50,8 +56,8 @@ def create(data):
             "target_repository": repo_name,
         },
     )
-    revision, target_repository = get_uplift_conduit_state(
-        g.phabricator,
+    revision_data, target_repository = get_uplift_conduit_state(
+        phab,
         revision_id=revision_id,
         target_repository_name=repo_name,
     )
@@ -60,12 +66,21 @@ def create(data):
         extra={"style": "uplift"},
     )
 
+    relman_phid = get_release_managers(phab)["phid"]
+
     try:
         output = {}
-        for revision in revisions:
+        for phid, revision in revision_data.revisions.items():
+            # Get the relevant diff.
+            diff_phid = phab.expect(revision, "fields", "diffPHID")
+            diff = revision_data.diffs[diff_phid]
+
+            # Create the revision.
             rev = create_uplift_revision(
-                g.phabricator, revision, target_repository
+                phab, revision, diff, relman_phid, target_repository
             )
+
+            # Store the returned revision information for the response.
             # TODO id is wrong here
             output[rev["id"]] = rev
     except Exception as e:

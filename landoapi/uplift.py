@@ -13,11 +13,15 @@ from typing import (
 
 from flask import current_app
 
-from landoapi.phabricator import PhabricatorClient
+from landoapi.phabricator import PhabricatorClient, PhabricatorAPIException
 from landoapi.phabricator_patch import patch_to_changes
 from landoapi.projects import RELMAN_PROJECT_SLUG
 from landoapi.repos import get_repos_for_env
-from landoapi.stacks import request_extended_revision_data
+from landoapi.stacks import (
+    RevisionData,
+    build_stack_graph,
+    request_extended_revision_data,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -80,7 +84,7 @@ def get_release_managers(phab: PhabricatorClient) -> dict:
 
 def get_uplift_conduit_state(
     phab: PhabricatorClient, revision_id: int, target_repository_name: str
-) -> Tuple[dict, dict]:
+) -> Tuple[RevisionData, dict]:
     # Load target repo from Phabricator
     target_repo = phab.call_conduit(
         "diffusion.repository.search",
@@ -88,20 +92,33 @@ def get_uplift_conduit_state(
     )
     target_repo = phab.single(target_repo, "data")
 
-    revision_data = request_extended_revision_data(phab, revisions)
-
     # Load base revision details from Phabricator
     revision = phab.call_conduit(
         "differential.revision.search", constraints={"ids": [revision_id]}
     )
-    revision = phab.single(revision, "data")
+    revision = phab.single(revision, "data", none_when_empty=True)
+    if not revision:
+        # TODO use correct exception
+        raise Exception()
 
-    return revision, target_repo
+    try:
+        nodes, _ = build_stack_graph(phab, phab.expect(revision, "phid"))
+    except PhabricatorAPIException:
+        # If a revision within the stack causes an API exception, treat the whole stack
+        # as not found.
+        # TODO use correct exception
+        return not_found_problem
+
+    stack_data = request_extended_revision_data(phab, [phid for phid in nodes])
+
+    return stack_data, target_repo
 
 
 def create_uplift_revision(
     phab: PhabricatorClient,
     source_revision: dict,
+    source_diff: dict,
+    relman_phid: str,
     target_repository: dict,
 ) -> dict:
     """Create a new revision on a repository, cloning a diff from another repo.
@@ -116,25 +133,18 @@ def create_uplift_revision(
         local_repo.approval_required is True
     ), f"No approval required for {target_repository}"
 
-    # Load release managers group for review
-    release_managers = get_release_managers(phab)
-
-    # Find the source diff on phabricator
-    stack = request_extended_revision_data(phab, [source_revision["phid"]])
-    diff = stack.diffs[source_revision["fields"]["diffPHID"]]
-
     # Get raw diff
-    raw_diff = phab.call_conduit("differential.getrawdiff", diffID=diff["id"])
+    raw_diff = phab.call_conduit("differential.getrawdiff", diffID=source_diff["id"])
     if not raw_diff:
         raise Exception("Missing raw source diff, cannot uplift revision.")
 
     # Base revision hash is available on the diff fields
-    refs = {ref["type"]: ref for ref in phab.expect(diff, "fields", "refs")}
+    refs = {ref["type"]: ref for ref in phab.expect(source_diff, "fields", "refs")}
     base_revision = refs["base"]["identifier"] if "base" in refs else None
 
     # The first commit in the attachment list is the current HEAD of stack
     # we can use the HEAD to mark the changes being created
-    commits = phab.expect(diff, "attachments", "commits", "commits")
+    commits = phab.expect(source_diff, "attachments", "commits", "commits")
     head = commits[0] if commits else None
 
     # Upload it on target repo
@@ -192,7 +202,7 @@ def create_uplift_revision(
             # Set release managers as reviewers
             {
                 "type": "reviewers.add",
-                "value": [f"blocking({release_managers['phid']})"],
+                "value": [f"blocking({relman_phid})"],
             },
             # Copy Bugzilla id
             {
