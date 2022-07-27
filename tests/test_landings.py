@@ -563,8 +563,8 @@ def test_format_patch_success_changed(
         "15b05c609cf43b49e7360eaea4de938158d18c6a",
     ]
 
-    assert (
-        worker.run_job(job, repo, hgrepo, treestatus, "landoapi.test.bucket")
+    assert worker.run_job(
+        job, repo, hgrepo, treestatus, "landoapi.test.bucket"
     ), "`run_job` should return `True` on a successful run."
     assert (
         job.status == LandingJobStatus.LANDED
@@ -593,12 +593,10 @@ def test_format_patch_success_changed(
     assert (
         rev2_content == TESTTXT_FORMATTED_1
     ), "`test.txt` is incorrect in base commit."
-    assert (
-        rev3_content == TESTTXT_FORMATTED_2
-    ), "`test.txt` is incorrect in tip commit."
+    assert rev3_content == TESTTXT_FORMATTED_2, "`test.txt` is incorrect in tip commit."
 
-    assert (
-        all(replacement in nodes for replacement in job.formatted_replacements)
+    assert all(
+        replacement in nodes for replacement in job.formatted_replacements
     ), "Values in `formatted_replacements` field should be in the landed hashes."
 
 
@@ -647,8 +645,8 @@ def test_format_patch_fail(
         "landoapi.landing_worker.notify_user_of_landing_failure", mock_notify
     )
 
-    assert (
-        not worker.run_job(job, repo, hgrepo, treestatus, "landoapi.test.bucket")
+    assert not worker.run_job(
+        job, repo, hgrepo, treestatus, "landoapi.test.bucket"
     ), "`run_job` should return `False` when autoformatting fails."
     assert (
         job.status == LandingJobStatus.FAILED

@@ -104,6 +104,7 @@ class PatchConflict(PatchApplicationFailure):
 
 class AutoformattingException(HgException):
     """Exception when autoformatting fails to format a patch stack."""
+
     pass
 
 
@@ -365,7 +366,6 @@ class HgRepo:
 
         return parser
 
-
     def format_stack_tip(self, mach: Path) -> str:
         """Add an autoformat commit to the top of the patch stack."""
         # Update to the tip of the stack.
@@ -376,9 +376,7 @@ class HgRepo:
 
         # Create a new commit.
         commit_message = (
-            "No bug: apply code formatting\n"
-            "\n"
-            "# ignore-this-changeset\n"
+            "No bug: apply code formatting\n" "\n" "# ignore-this-changeset\n"
         )
         self.run_hg(["commit", "-m", commit_message])
 
@@ -410,7 +408,6 @@ class HgRepo:
                         f"Error trying to amend commit {pre_formatting_hash} after linting."
                     )
                     raise HgException.from_hglib_error(e)
-
 
             # Get the post-formatting hash.
             post_formatting_hash = self.get_current_node().strip()
@@ -473,7 +470,6 @@ class HgRepo:
 
         # If neither autoformatting strategy works, raise.
         raise AutoformattingException()
-
 
     def push(self, target, bookmark=None):
         if not os.getenv(REQUEST_USER_ENV_VAR):

@@ -12,7 +12,6 @@ import signal
 import subprocess
 import time
 
-import hglib
 from flask import current_app
 
 from landoapi import patches
