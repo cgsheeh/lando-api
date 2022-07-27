@@ -356,15 +356,12 @@ class HgRepo:
 
     def read_lando_config(self) -> Optional[configparser.ConfigParser]:
         """Attempt to read the `.lando.ini` file."""
-        lando_config_path = Path(self.path) / ".lando.ini"
-        if not lando_config_path.exists():
-            return None
+        lando_ini_contents = self.read_checkout_file(".lando.ini")
 
         # ConfigParser will use `:` as a delimeter unless told otherwise.
         # We set our keys as `formatter:pattern` so specify `=` as the delimiters.
         parser = configparser.ConfigParser(delimiters="=")
-        with lando_config_path.open() as f:
-            parser.read_file(f)
+        parser.read_string(lando_ini_contents)
 
         return parser
 
