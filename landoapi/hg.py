@@ -108,6 +108,13 @@ class AutoformattingException(HgException):
     pass
 
 
+AUTOFORMAT_COMMIT_MESSAGE = """
+No bug: apply code formatting
+
+# ignore-this-changeset
+""".strip()
+
+
 class HgRepo:
     ENCODING = "utf-8"
     DEFAULT_CONFIGS = {
@@ -369,23 +376,31 @@ class HgRepo:
 
         return parser
 
-    def format_stack_tip(self, mach: Path) -> str:
+    def format_stack_tip(self, mach_path: Path) -> Optional[str]:
         """Add an autoformat commit to the top of the patch stack."""
         # Update to the tip of the stack.
         self.run_hg(["update", "-r", "tip"])
 
         # Run linters.
-        subprocess.run([mach, "lint", "-r", "stack()"], check=True)
+        subprocess.run([mach_path, "lint", "-r", "stack()"], check=True)
 
-        # Create a new commit.
-        commit_message = (
-            "No bug: apply code formatting\n" "\n" "# ignore-this-changeset\n"
-        )
-        self.run_hg(["commit", "-m", commit_message])
+        try:
+            # Create a new commit.
+            self.run_hg(
+                ["commit"]
+                + ["--message", AUTOFORMAT_COMMIT_MESSAGE]
+                + ["--landing_system", "lando"]
+            )
+        except hglib.error.CommandError as exc:
+            if exc.out.strip() == b"nothing changed":
+                # If nothing changed after formatting we can just return.
+                return None
+
+            raise exc
 
         return self.get_current_node().decode("utf-8")
 
-    def format_stack_individually(self, mach: Path) -> List[str]:
+    def format_stack_individually(self, mach_path: Path) -> List[str]:
         """Attempt to format each commit in the patch stack individually."""
         # Update to the base of the stack.
         self.run_hg(
@@ -399,7 +414,7 @@ class HgRepo:
             pre_formatting_hash = self.get_current_node().strip()
 
             # Run `mach lint` on each commit.
-            subprocess.run([mach, "lint", "-r", "."], check=True)
+            subprocess.run([mach_path, "lint", "-r", "."], check=True)
 
             try:
                 # Amend the commit to apply changes.
@@ -448,31 +463,41 @@ class HgRepo:
             return None
 
         # If `mach` is not at the root of the repo, we can't autoformat.
-        mach = Path(self.path) / "mach"
-        if not mach.exists():
+        mach_path = Path(self.path) / "mach"
+        if not mach_path.exists():
+            logger.info("No `./mach` in the repo - skipping autoformat.")
             return None
 
-        try:
-            # Try formatting each patch individually.
-            return self.format_stack_individually(mach)
-        except (HgException, subprocess.CalledProcessError) as individual_exc:
-            # TODO use the correct exception
-            logger.warning(
-                "Formatting each commit individually failed - falling back to format commit."
-            )
-            logger.exception(individual_exc)
+        # TODO just make the autoformat work with a tip commit and then try adding
+        # the fancy stuff.
+        # try:
+        #     # Try formatting each patch individually.
+        #     return self.format_stack_individually(mach)
+        # except (HgException, subprocess.CalledProcessError) as individual_exc:
+        #     # TODO use the correct exception
+        #     logger.warning(
+        #         "Formatting each commit individually failed - falling back to format commit."
+        #     )
+        #     logger.exception(individual_exc)
 
         try:
             # If formatting each commit has failed, create an autoformatting
             # commit that fixes each changed file in the stack.
-            return [self.format_stack_tip(mach)]
+            formatting_changeset = self.format_stack_tip(mach_path)
+
+            if formatting_changeset is None:
+                return formatting_changeset
+
+            return [formatting_changeset]
         except (HgException, subprocess.CalledProcessError) as tip_exc:
             # TODO use the correct exception
             logger.warning("Failed to create an autoformat commit.")
             logger.exception(tip_exc)
 
         # If neither autoformatting strategy works, raise.
-        raise AutoformattingException()
+        raise AutoformattingException(
+            "Could not autoformat individually or with an autoformat commit."
+        )
 
     def push(self, target, bookmark=None):
         if not os.getenv(REQUEST_USER_ENV_VAR):

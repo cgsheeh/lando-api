@@ -437,7 +437,7 @@ class LandingWorker:
                 try:
                     replacements = hgrepo.format_stack()
 
-                    # If autoformatting changed any changesets, note those in the job.
+                    # If autoformatting added any changesets, note those in the job.
                     if replacements:
                         job.formatted_replacements = replacements
 
