@@ -38,8 +38,43 @@ def get(phab: PhabricatorClient):
 def create(phab: PhabricatorClient, data: dict):
     """Create new uplift requests for requested repository & revision"""
     repo_name = data["repository"]
+
+    # Order is parsed to determine tip revision ID.
+    # Converted from ID -> diff id, to PHID -> diff ID
+    # Used to create the new revisions in the order of the landing path.
+    # So the key thing is to somehow get the revision ID and diff ID in
+    # landing order.
     landing_path_ids = parse_landing_path(data["landing_path"])
+
+    # Passed to `get_uplift_conduit_state` as base revision id.
+    # Converted to phid, then used to build a stack graph
+    # Could we just pass this as the current revision?
     tip_revision_id = landing_path_ids[-1][0]
+
+    # The data is going api -> ui -> api. Check API for a relevant field to
+    # use from `/stacks/Dxx` and build things based off that data here. Change
+    # UI to pass this field and API to accept it on uplift endpoint.
+
+    # Can we just use stackGraph for this somehow?
+
+    # Likely we need:
+    # - revision start and ends
+    # - Use RevisionStack to create stack representation
+    # - build ordered graph using those
+    # -
+
+    stack = data["stack"]
+    landing_path = [
+        {
+            "diff_id": item["diff"]["id"],
+            "revision_id": item["id"],
+        }
+        for item in stack["revisions"]
+    ]
+    landing_path_ids = parse_landing_path(landing_path)
+    tip_revision_id = data["tip_revision_id"]
+
+    # A comment in lando-ui indicates there is only ever a single unique landable path.
 
     # Validate repository.
     all_repos = get_repos_for_env(current_app.config.get("ENVIRONMENT"))
