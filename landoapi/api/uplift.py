@@ -49,7 +49,7 @@ def create(phab: PhabricatorClient, data: dict):
     # Passed to `get_uplift_conduit_state` as base revision id.
     # Converted to phid, then used to build a stack graph
     # Could we just pass this as the current revision?
-    tip_revision_id = landing_path_ids[-1][0]
+    tip_revision_id = data["revision_id"]
 
     # The data is going api -> ui -> api. Check API for a relevant field to
     # use from `/stacks/Dxx` and build things based off that data here. Change
