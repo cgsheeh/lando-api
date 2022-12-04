@@ -29,6 +29,7 @@ class ChangeKind(enum.Enum):
 
 
 def serialize_hunk(hunk: list) -> dict:
+    """Convert a list of diff hunks into a dict representation."""
     prev_op = " "
     old_eof_newline, new_eof_newline = True, True
     corpus = []
