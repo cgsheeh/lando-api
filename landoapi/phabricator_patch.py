@@ -136,7 +136,7 @@ def serialize_patched_file(f: dict, public_node: str) -> dict:
     }
 
 
-def patch_to_changes(patch_content: str, public_node: str) -> list:
+def patch_to_changes(patch_content: str, public_node: str) -> list[dict]:
     """Build a list of Phabricator changes from a raw diff"""
     patch = rs_parsepatch.get_diffs(patch_content, hunks=True)
     return [serialize_patched_file(f, public_node) for f in patch]
