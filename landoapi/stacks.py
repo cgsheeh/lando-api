@@ -132,7 +132,7 @@ def request_extended_revision_data(
 
 
 class RevisionStack:
-    def __init__(self, nodes, edges):
+    def __init__(self, nodes: list[str], edges: list[tuple[str, str]]):
         self.nodes = nodes
         self.edges = edges
 
