@@ -3,7 +3,9 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 from __future__ import annotations
 
+from collections import defaultdict
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime
 import logging
 import re
@@ -67,6 +69,17 @@ def job_processing(worker: LandingWorker, job: LandingJob, db: SQLAlchemy):
     finally:
         job.duration_seconds = (datetime.now() - start_time).seconds
         db.session.commit()
+
+
+@dataclass
+class ChangesetData:
+    """Represents parsed changeset data from Mercurial."""
+
+    # The hash of the changeset.
+    node: str
+
+    # The title of the changeset, i.e. the first line of the commit message.
+    title: str
 
 
 class LandingWorker(Worker):
@@ -379,22 +392,33 @@ class LandingWorker(Worker):
                     self.notify_user_of_landing_failure(job)
                     return True
 
-            # Get the changeset titles for the stack.
-            changeset_titles = (
-                hgrepo.run_hg(["log", "-r", "stack()", "-T", "{desc|firstline}\n"])
-                .decode("utf-8")
-                .splitlines()
+            # Get the changeset hash and title for each changeset in the stack.
+            changeset_data = (
+                ChangesetData(node=node, title=title)
+                for line in (
+                    hgrepo.run_hg(
+                        ["log", "-r", "stack()", "-T", "{node}\0{desc|firstline}\n"]
+                    )
+                    .decode("utf-8")
+                    .splitlines()
+                )
+                for node, title in line.split("\0")
             )
 
             # Parse bug numbers from commits in the stack.
-            bug_ids = [
-                str(bug) for title in changeset_titles for bug in parse_bugs(title)
-            ]
+            # Here we get each bug id in the stack. We need a mapping of bug ids to
+            # changesets that match the bug.
+            bug_id_to_changesets = defaultdict(list)
+            for changeset in changeset_data:
+                for bug in parse_bugs(changeset.title):
+                    bug_id_to_changesets[str(bug)].append(changeset)
 
             # Run automated code formatters if enabled.
             if repo.autoformat_enabled:
                 try:
-                    replacements = hgrepo.format_stack(len(patch_bufs), bug_ids)
+                    replacements = hgrepo.format_stack(
+                        len(patch_bufs), bug_id_to_changesets.keys()
+                    )
 
                     # If autoformatting added any changesets, note those in the job.
                     if replacements:
