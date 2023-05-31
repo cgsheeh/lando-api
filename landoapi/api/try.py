@@ -12,6 +12,7 @@ from landoapi.models.landing_job import (
     LandingJob,
     LandingJobStatus,
 )
+from landoapi.repos import get_repos_for_env
 from landoapi.storage import db
 
 logger = logging.getLogger(__name__)
