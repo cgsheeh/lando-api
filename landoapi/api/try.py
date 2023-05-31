@@ -38,6 +38,16 @@ def post(data: dict):
     # TODO what format should the patch data be?
     patches = data["patches"]
 
+    # TODO better way to get the try repo?
+    try_repo = get_repos_for_env(current_app.config.get("ENVIRONMENT")).get("try")
+    if not try_repo:
+        raise ProblemException(
+            500,
+            "Could not find a `try` repo to submit to.",
+            "Could not find a `try` repo to submit to.",
+            type="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+        )
+
     # TODO how to store the data in the DB as a job?
 
     return 201, None
