@@ -60,6 +60,7 @@ class Repo:
             the commit message at landing time (e.g. `[("DONTBUILD", "help text")]`).
         product_details_url (str): The URL which contains product-related information
             relevant to the repo. Defaults to an empty string.
+        force_push (bool): Boolean that controls the use of force pushes for a repo.
     """
 
     tree: str
@@ -74,6 +75,7 @@ class Repo:
     autoformat_enabled: bool = False
     commit_flags: list[tuple[str, str]] = field(default_factory=list)
     product_details_url: str = ""
+    force_push: bool = False
 
     def __post_init__(self):
         """Set defaults based on initial values.
@@ -224,6 +226,7 @@ REPO_CONFIG = {
             pull_path="https://hg.mozilla.org/mozilla-unified",
             access_group=SCM_LEVEL_1,
             short_name="try",
+            force_push=True,
         ),
     },
     "devsvcstage": {
@@ -240,6 +243,7 @@ REPO_CONFIG = {
             pull_path="https://hg.mozilla.org/mozilla-unified",
             access_group=SCM_LEVEL_1,
             short_name="try",
+            force_push=True,
         ),
     },
     "devsvcprod": {
@@ -293,6 +297,7 @@ REPO_CONFIG = {
             pull_path="https://hg.mozilla.org/mozilla-unified",
             access_group=SCM_LEVEL_1,
             short_name="try",
+            force_push=True,
         ),
         "comm-central": Repo(
             tree="comm-central",

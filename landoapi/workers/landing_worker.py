@@ -385,7 +385,11 @@ class LandingWorker(Worker):
 
             repo_info = f"tree: {repo.tree}, push path: {repo.push_path}"
             try:
-                hgrepo.push(repo.push_path, bookmark=repo.push_bookmark or None)
+                hgrepo.push(
+                    repo.push_path,
+                    bookmark=repo.push_bookmark or None,
+                    force_push=repo.force_push,
+                )
             except (TreeClosed, TreeApprovalRequired, LostPushRace) as e:
                 message = (
                     f"`Temporary error ({e.__class__}) "
