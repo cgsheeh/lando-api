@@ -51,5 +51,10 @@ def post(data: dict):
     ldap_username = g.auth0_user.email
 
     # TODO how to store the data in the DB as a job?
+    job = LandingJob(
+        requester_email=ldap_username,
+        repository_name=try_repo.short_name,
+        repository_url=try_repo.url,
+    )
 
     return 201, None
