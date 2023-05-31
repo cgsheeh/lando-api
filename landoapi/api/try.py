@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 @auth.require_auth0(scopes=("lando", "profile", "email"), userinfo=True)
 def post(data: dict):
+    # TODO move the scm check into a decorator.
     # Return appropriate error message if user does not have commit access.
     if not g.auth0_user.is_in_groups("all_scm_level_1"):
         raise ProblemException(
@@ -34,5 +35,9 @@ def post(data: dict):
             type="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
         )
 
+    # TODO what format should the patch data be?
     patches = data["patches"]
+
+    # TODO how to store the data in the DB as a job?
+
     return 201, None
