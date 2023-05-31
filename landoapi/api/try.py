@@ -12,7 +12,7 @@ from landoapi import auth
 logger = logging.getLogger(__name__)
 
 
-@auth.require_auth0(scopes=("lando",), userinfo=True)
+@auth.require_auth0(scopes=("lando", "profile", "email"), userinfo=True)
 def post(data: dict):
     # Return appropriate error message if user does not have commit access.
     if not g.auth0_user.is_in_groups("all_scm_level_1"):
