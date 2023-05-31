@@ -59,6 +59,7 @@ def post(data: dict):
         requester_email=ldap_username,
         repository_name=try_repo.short_name,
         repository_url=try_repo.url,
+        status=LandingJobStatus.SUBMITTED,
     )
 
     return 201, None
