@@ -8,6 +8,10 @@ from connexion import ProblemException
 from flask import g
 
 from landoapi import auth
+from landoapi.models.landing_job import (
+    LandingJob,
+    LandingJobStatus,
+)
 
 logger = logging.getLogger(__name__)
 
