@@ -78,6 +78,7 @@ def post(data: dict):
         status=LandingJobStatus.SUBMITTED,
     )
 
+    db.session.add(job)
     db.session.commit()
 
     return 201, None
