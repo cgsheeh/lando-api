@@ -6,7 +6,10 @@ import functools
 import logging
 
 from connexion import ProblemException
-from flask import g
+from flask import (
+    current_app,
+    g,
+)
 
 from landoapi import auth
 from landoapi.models.landing_job import (
