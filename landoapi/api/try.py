@@ -12,6 +12,7 @@ from landoapi.models.landing_job import (
     LandingJob,
     LandingJobStatus,
 )
+from landoapi.storage import db
 
 logger = logging.getLogger(__name__)
 
@@ -61,5 +62,7 @@ def post(data: dict):
         repository_url=try_repo.url,
         status=LandingJobStatus.SUBMITTED,
     )
+
+    db.session.commit()
 
     return 201, None
