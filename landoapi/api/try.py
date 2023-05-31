@@ -48,6 +48,8 @@ def post(data: dict):
             type="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
         )
 
+    ldap_username = g.auth0_user.email
+
     # TODO how to store the data in the DB as a job?
 
     return 201, None
