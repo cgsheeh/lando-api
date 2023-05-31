@@ -266,6 +266,15 @@ REPO_CONFIG = {
             "/1.0/firefox_versions.json",
             autoformat_enabled=True,
         ),
+        # Try uses `mozilla-unified` as the `pull_path` as using try proper is exceptionally slow.
+        "try": Repo(
+            tree="try",
+            url="https://hg.mozilla.org/try",
+            push_path="ssh://hg.mozilla.org/try",
+            pull_path="https://hg.mozilla.org/mozilla-unified",
+            access_group=SCM_LEVEL_1,
+            short_name="try",
+        ),
         "comm-central": Repo(
             tree="comm-central",
             url="https://hg.mozilla.org/comm-central",
