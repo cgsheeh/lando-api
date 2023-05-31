@@ -381,11 +381,11 @@ paths:
             type: object
             required:
               - patches
-          properties:
-            patches:
-              type: array
-              description: |
-                Ordered array of patches for submission to Lando.
+            properties:
+              patches:
+                type: array
+                description: |
+                  Ordered array of patches for submission to Lando.
       responses:
         201:
           description: Push was submitted successfully.
