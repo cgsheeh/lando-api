@@ -335,7 +335,8 @@ def test_integrated_execute_job_with_bookmark(
     assert len(hgrepo.push.call_args) == 2
     assert len(hgrepo.push.call_args[0]) == 1
     assert hgrepo.push.call_args[0][0] == hg_server
-    assert hgrepo.push.call_args[1] == {"bookmark": "@"}
+    # TODO should this test really check these arguments?
+    assert hgrepo.push.call_args[1] == {"bookmark": "@", "force_push": False}
 
 
 def test_lose_push_race(
