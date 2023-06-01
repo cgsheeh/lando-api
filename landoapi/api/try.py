@@ -68,9 +68,10 @@ def post(data: dict):
             type="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
         )
 
-    ldap_username = g.auth0_user.email
 
+    # Add a landing job for this try push.
     # TODO how to store the data in the DB as a job?
+    ldap_username = g.auth0_user.email
     job = LandingJob(
         requester_email=ldap_username,
         repository_name=try_repo.short_name,
