@@ -380,8 +380,13 @@ paths:
           schema:
             type: object
             required:
+              - base_commit
               - patches
             properties:
+              base_commit:
+                type: string
+                description: |
+                  The published base commit on which to apply `patches`.
               patches:
                 type: array
                 description: |

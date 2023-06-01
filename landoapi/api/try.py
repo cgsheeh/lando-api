@@ -56,6 +56,7 @@ def enforce_scm_level_1(func):
 @enforce_scm_level_1
 def post(data: dict):
     # TODO what format should the patch data be?
+    base_commit = data["base_commit"]
     patches = data["patches"]
 
     # TODO better way to get the try repo?
