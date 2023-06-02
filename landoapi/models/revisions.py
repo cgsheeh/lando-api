@@ -53,11 +53,13 @@ class Revision(Base):
     """
 
     # revision_id and diff_id map to Phabricator IDs (integers).
-    revision_id = db.Column(db.Integer, nullable=False, unique=True)
+    # TODO confirm this being nullable doesn't cause any problems.
+    revision_id = db.Column(db.Integer, nullable=True, unique=True)
 
     # diff_id is that of the latest diff on the revision at landing request time. It
     # does not track all diffs.
-    diff_id = db.Column(db.Integer, nullable=False)
+    # TODO confirm this being nullable doesn't cause any problems.
+    diff_id = db.Column(db.Integer, nullable=True)
 
     # The actual patch.
     patch_bytes = db.Column(db.LargeBinary, nullable=False, default=b"")
