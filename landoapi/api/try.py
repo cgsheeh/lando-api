@@ -75,9 +75,9 @@ def post(data: dict):
     revisions = [Revision(patch_bytes=patch, patch_data={}) for patch in patches]
     add_job_with_revisions(
         revisions,
-        requester_email=ldap_username,
         repository_name=try_repo.short_name,
         repository_url=try_repo.url,
+        requester_email=ldap_username,
         status=LandingJobStatus.SUBMITTED,
         target_cset=base_commit,
     )
