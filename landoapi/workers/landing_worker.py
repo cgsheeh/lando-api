@@ -429,9 +429,10 @@ class LandingWorker(Worker):
                 # the landing user so they are aware and can update the bugs themselves.
                 self.notify_user_of_bug_update_failure(job, e)
 
-        # TODO need to avoid this if the repo isn't on Phabricator.
         # Trigger update of repo in Phabricator so patches are closed quicker.
         # Especially useful on low-traffic repositories.
-        self.phab_trigger_repo_update(repo.phab_identifier)
+        # TODO we need a better way to decide if we should trigger a repo update on phab.
+        if not repo.force_push:
+            self.phab_trigger_repo_update(repo.phab_identifier)
 
         return True
