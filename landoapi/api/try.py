@@ -13,9 +13,10 @@ from flask import (
 
 from landoapi import auth
 from landoapi.models.landing_job import (
-    LandingJob,
+    add_job_with_revisions,
     LandingJobStatus,
 )
+from landoapi.models.revisions import Revision
 from landoapi.repos import get_repos_for_env
 from landoapi.storage import db
 
@@ -69,18 +70,16 @@ def post(data: dict):
             type="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
         )
 
-
     # Add a landing job for this try push.
-    # TODO how to store the data in the DB as a job?
     ldap_username = g.auth0_user.email
-    job = LandingJob(
+    # TODO do something more useful with `patch_data`.
+    revisions = [Revision(patch_bytes=patch, patch_data={}) for patch in patches]
+    add_job_with_revisions(
+        revisions,
         requester_email=ldap_username,
         repository_name=try_repo.short_name,
         repository_url=try_repo.url,
         status=LandingJobStatus.SUBMITTED,
     )
-
-    db.session.add(job)
-    db.session.commit()
 
     return 201, None
