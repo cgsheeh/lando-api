@@ -572,9 +572,10 @@ class HgRepo:
         except hglib.error.CommandError as exc:
             raise HgException.from_hglib_error(exc) from exc
 
-    def update_repo(self, source):
-        # Obtain remote tip. We assume there is only a single head.
-        target_cset = self.get_remote_head(source)
+    def update_repo(self, source, target_cset: Optional[bytes] = None):
+        # Obtain remote tip if not provided. We assume there is only a single head.
+        if not target_cset:
+            target_cset = self.get_remote_head(source)
 
         # Strip any lingering changes.
         self.clean_repo()

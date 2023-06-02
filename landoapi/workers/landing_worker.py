@@ -278,7 +278,7 @@ class LandingWorker(Worker):
         with hgrepo.for_push(job.requester_email):
             # Update local repo.
             try:
-                hgrepo.update_repo(repo.pull_path)
+                hgrepo.update_repo(repo.pull_path, target_cset=job.target_cset)
             except Exception as e:
                 message = f"Unexpected error while fetching repo from {repo.pull_path}."
                 logger.exception(message)

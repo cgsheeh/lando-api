@@ -80,6 +80,7 @@ def post(data: dict):
         repository_name=try_repo.short_name,
         repository_url=try_repo.url,
         status=LandingJobStatus.SUBMITTED,
+        target_cset=base_commit,
     )
 
     return 201, None
