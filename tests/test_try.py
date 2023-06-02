@@ -21,3 +21,11 @@ def test_try_api():
 def test_try_landing_job():
     """Test that a Try landing job completes as expected."""
     assert False, "Not implemented."
+
+
+def test_scm_level_1_enforce():
+    """Test the scm_level_1 enforcement/error handling.
+
+    TODO should we make the enforcement more generic? Part of the auth0 decorator?
+    """
+    raise NotImplemented("TODO")
