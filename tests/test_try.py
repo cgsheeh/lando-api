@@ -4,6 +4,21 @@
 
 import pytest
 
+PATCH_NORMAL = r"""
+# HG changeset patch
+# User Test User <test@example.com>
+# Date 0 0
+#      Thu Jan 01 00:00:00 1970 +0000
+# Diff Start Line 7
+add another file.
+diff --git a/test.txt b/test.txt
+--- a/test.txt
++++ b/test.txt
+@@ -1,1 +1,2 @@
+ TEST
++adding another line
+""".strip()
+
 
 # TODO implement
 def test_try_push_integration():
@@ -11,10 +26,30 @@ def test_try_push_integration():
     raise NotImplemented("TODO")
 
 
-# TODO implement
-def test_try_api():
-    """Test for the `/try` API."""
-    raise NotImplemented("TODO")
+def test_try_api_requires_data(db, client, auth0_mock, mocked_repo_config):
+    try_push_json = {
+        "base_commit": "abc",
+        "patches": [],
+    }
+    response = client.post("/try", json=try_push_json, headers=auth0_mock.mock_headers)
+    assert (
+        response.status_code == 400
+    ), "Try push without 40-character base commit should return 400."
+
+    try_push_json["base_commit"] = "abcabcabcaabcabcabcaabcabcabcaabcabcabca"
+    response = client.post("/try", json=try_push_json, headers=auth0_mock.mock_headers)
+    assert response.status_code == 400, "Try push without patches should return 400."
+
+
+def test_try_api_success(db, client, auth0_mock, mocked_repo_config):
+    try_push_json = {
+        "base_commit": "abcabcabcaabcabcabcaabcabcabcaabcabcabca",
+        "patches": [PATCH_NORMAL],
+    }
+    response = client.post("/try", json=try_push_json, headers=auth0_mock.mock_headers)
+    assert response.status_code == 201, "Successful try push should return 201."
+
+    # TODO check the entries are in the database.
 
 
 # TODO implement
