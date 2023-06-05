@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import pytest
+from landoapi.models.landing_job import LandingJob
 
 PATCH_NORMAL = r"""
 # HG changeset patch
@@ -49,7 +50,11 @@ def test_try_api_success(db, client, auth0_mock, mocked_repo_config):
     response = client.post("/try", json=try_push_json, headers=auth0_mock.mock_headers)
     assert response.status_code == 201, "Successful try push should return 201."
 
-    # TODO check the entries are in the database.
+    queue_items = LandingJob.job_queue_query(
+        repositories=["try"], grace_seconds=0
+    ).all()
+
+    assert len(queue_items) == 1, "Try push should have created 1 landing job."
 
 
 # TODO implement
