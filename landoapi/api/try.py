@@ -59,6 +59,22 @@ def post(data: dict):
     base_commit = data["base_commit"]
     patches = data["patches"]
 
+    if not patches:
+        raise ProblemException(
+            400,
+            "Patches must contain at least 1 patch.",
+            "Patches must contain at least 1 patch.",
+            type="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+        )
+
+    if not base_commit or len(base_commit) != 40:
+        raise ProblemException(
+            400,
+            "Base commit must be a 40-character commit hash.",
+            "Base commit must be a 40-character commit hash.",
+            type="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+        )
+
     # TODO better way to get the try repo?
     try_repo = get_repos_for_env(current_app.config.get("ENVIRONMENT")).get("try")
     if not try_repo:
