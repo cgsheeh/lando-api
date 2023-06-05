@@ -390,7 +390,7 @@ paths:
               patches:
                 type: array
                 description: |
-                  Ordered array of patches for submission to Lando.
+                  Ordered array of base64 encoded patches for submission to Lando.
       responses:
         201:
           description: Push was submitted successfully.

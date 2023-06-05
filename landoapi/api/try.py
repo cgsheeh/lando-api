@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import base64
 import functools
 import logging
 
@@ -89,7 +90,9 @@ def post(data: dict):
     # Add a landing job for this try push.
     ldap_username = g.auth0_user.email
     # TODO do something more useful with `patch_data`.
-    revisions = [Revision(patch_bytes=patch, patch_data={}) for patch in patches]
+    revisions = [
+        Revision(patch_bytes=base64.b64decode(patch), patch_data={}) for patch in patches
+    ]
     add_job_with_revisions(
         revisions,
         repository_name=try_repo.short_name,
