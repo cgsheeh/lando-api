@@ -20,12 +20,6 @@ diff --git a/test.txt b/test.txt
 """.strip()
 
 
-# TODO implement
-def test_try_push_integration():
-    """End-to-end test of a try push landing job via the API."""
-    raise NotImplemented("TODO")
-
-
 def test_try_api_requires_data(db, client, auth0_mock, mocked_repo_config):
     try_push_json = {
         "base_commit": "abc",
@@ -52,7 +46,6 @@ def test_try_api_success(db, client, auth0_mock, mocked_repo_config):
     queue_items = LandingJob.job_queue_query(
         repositories=["try"], grace_seconds=0
     ).all()
-
     assert len(queue_items) == 1, "Try push should have created 1 landing job."
 
 
