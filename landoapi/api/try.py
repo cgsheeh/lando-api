@@ -37,7 +37,7 @@ def enforce_scm_level_1(func):
             )
 
         # Check that user has active_scm_level_1 and not `expired_scm_level_1`.
-        if g.auth0_user.is_in_group(
+        if g.auth0_user.is_in_groups(
             "expired_scm_level_1"
         ) or not g.auth0_user.is_in_groups("active_scm_level_1"):
             raise ProblemException(
