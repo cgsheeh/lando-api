@@ -91,7 +91,8 @@ def post(data: dict):
     ldap_username = g.auth0_user.email
     # TODO do something more useful with `patch_data`.
     revisions = [
-        Revision(patch_bytes=base64.b64decode(patch), patch_data={}) for patch in patches
+        Revision(patch_bytes=base64.b64decode(patch.encode("ascii")), patch_data={})
+        for patch in patches
     ]
     add_job_with_revisions(
         revisions,
