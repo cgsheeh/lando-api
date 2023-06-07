@@ -54,8 +54,8 @@ def test_try_api_success(
     treestatusdouble.open_tree("mozilla-central")
 
     try_push_json = {
-        # TODO what should the actual base commit be?
-        "base_commit": "abcabcabcaabcabcabcaabcabcabcaabcabcabca",
+        # The only node in the test repo.
+        "base_commit": "0da79df0ffff88e0ad6fa3e27508bcf5b2f2cec4",
         "patches": [base64.b64encode(PATCH_NORMAL).decode("ascii")],
     }
     response = client.post("/try", json=try_push_json, headers=auth0_mock.mock_headers)
@@ -69,8 +69,6 @@ def test_try_api_success(
     # Run the landing job.
     job = queue_items[0]
 
-    # TODO can we get the try repo in the mocked_repo_config somehow?
-    # repo = get_repos_for_env("test")["try"]
     repo = Repo(
         tree="try",
         url=hg_server,
