@@ -86,13 +86,6 @@ def test_try_api_success(
     assert job.status == LandingJobStatus.LANDED
     assert len(job.landed_commit_id) == 40
 
-# TODO implement
-def test_try_landing_job():
-    """Test that a Try landing job completes as expected."""
-    # TODO make sure the base64 encoding/decoding is working as expected.
-    # ie the patch should apply correctly, we should be checking the contents are as expected.
-    raise NotImplemented("TODO")
-
 
 def test_scm_level_1_enforce():
     """Test the scm_level_1 enforcement/error handling.
