@@ -56,8 +56,6 @@ def enforce_scm_level_1(func):
 @auth.require_auth0(scopes=("lando", "profile", "email"), userinfo=True)
 @enforce_scm_level_1
 def post(data: dict):
-    # TODO what format should the patch data be?
-    # TODO these should probably be base64 encoded.
     base_commit = data["base_commit"]
     patches = data["patches"]
 
@@ -77,7 +75,6 @@ def post(data: dict):
             type="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
         )
 
-    # TODO better way to get the try repo?
     try_repo = get_repos_for_env(current_app.config.get("ENVIRONMENT")).get("try")
     if not try_repo:
         raise ProblemException(
@@ -89,8 +86,8 @@ def post(data: dict):
 
     # Add a landing job for this try push.
     ldap_username = g.auth0_user.email
-    # TODO do something more useful with `patch_data`.
     revisions = [
+        # TODO do something more useful with `patch_data`.
         Revision(patch_bytes=base64.b64decode(patch.encode("ascii")), patch_data={})
         for patch in patches
     ]
