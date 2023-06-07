@@ -6,7 +6,7 @@ import base64
 
 from landoapi.hg import HgRepo
 from landoapi.models.landing_job import LandingJob, LandingJobStatus
-from landoapi.repos import get_repos_for_env, Repo, SCM_LEVEL_1
+from landoapi.repos import Repo, SCM_LEVEL_1
 from landoapi.workers.landing_worker import LandingWorker
 
 PATCH_NORMAL = rb"""
