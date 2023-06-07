@@ -4,7 +4,10 @@
 
 import base64
 
-from landoapi.models.landing_job import LandingJob
+from landoapi.hg import HgRepo
+from landoapi.models.landing_job import LandingJob, LandingJobStatus
+from landoapi.repos import get_repos_for_env, Repo, SCM_LEVEL_1
+from landoapi.workers.landing_worker import LandingWorker
 
 PATCH_NORMAL = rb"""
 # HG changeset patch
@@ -37,8 +40,21 @@ def test_try_api_requires_data(db, client, auth0_mock, mocked_repo_config):
     assert response.status_code == 400, "Try push without patches should return 400."
 
 
-def test_try_api_success(db, client, auth0_mock, mocked_repo_config):
+def test_try_api_success(
+    app,
+    db,
+    hg_server,
+    hg_clone,
+    treestatusdouble,
+    client,
+    auth0_mock,
+    mocked_repo_config,
+):
+    treestatus = treestatusdouble.get_treestatus_client()
+    treestatusdouble.open_tree("mozilla-central")
+
     try_push_json = {
+        # TODO what should the actual base commit be?
         "base_commit": "abcabcabcaabcabcabcaabcabcabcaabcabcabca",
         "patches": [base64.b64encode(PATCH_NORMAL).decode("ascii")],
     }
@@ -50,10 +66,33 @@ def test_try_api_success(db, client, auth0_mock, mocked_repo_config):
     ).all()
     assert len(queue_items) == 1, "Try push should have created 1 landing job."
 
+    # Run the landing job.
+    job = queue_items[0]
+
+    # TODO can we get the try repo in the mocked_repo_config somehow?
+    # repo = get_repos_for_env("test")["try"]
+    repo = Repo(
+        tree="try",
+        url=hg_server,
+        access_group=SCM_LEVEL_1,
+        push_path=hg_server,
+        pull_path=hg_server,
+        short_name="try",
+        force_push=True,
+    )
+
+    worker = LandingWorker(sleep_seconds=0.01)
+    hgrepo = HgRepo(hg_clone.strpath)
+
+    assert worker.run_job(job, repo, hgrepo, treestatus)
+    assert job.status == LandingJobStatus.LANDED
+    assert len(job.landed_commit_id) == 40
 
 # TODO implement
 def test_try_landing_job():
     """Test that a Try landing job completes as expected."""
+    # TODO make sure the base64 encoding/decoding is working as expected.
+    # ie the patch should apply correctly, we should be checking the contents are as expected.
     raise NotImplemented("TODO")
 
 
