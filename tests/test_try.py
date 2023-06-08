@@ -76,6 +76,7 @@ def test_try_api_success(
         push_path=hg_server,
         pull_path=hg_server,
         short_name="try",
+        phabricator_repo=False,
         force_push=True,
     )
 

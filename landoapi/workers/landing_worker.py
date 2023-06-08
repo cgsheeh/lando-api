@@ -431,8 +431,7 @@ class LandingWorker(Worker):
 
         # Trigger update of repo in Phabricator so patches are closed quicker.
         # Especially useful on low-traffic repositories.
-        # TODO we need a better way to decide if we should trigger a repo update on phab.
-        if not repo.force_push:
+        if repo.phab_identifier:
             self.phab_trigger_repo_update(repo.phab_identifier)
 
         return True
