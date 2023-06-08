@@ -322,8 +322,6 @@ def test_integrated_execute_job_with_force_push(
 
     worker = LandingWorker(sleep_seconds=0.01)
 
-    # TODO force_push turns this off at the moment, either make the test
-    # account for this or it can be removed.
     # We don't care about repo update in this test, however if we don't mock
     # this, the test will fail since there is no celery instance.
     monkeypatch.setattr(
@@ -337,7 +335,6 @@ def test_integrated_execute_job_with_force_push(
     assert len(hgrepo.push.call_args) == 2
     assert len(hgrepo.push.call_args[0]) == 1
     assert hgrepo.push.call_args[0][0] == hg_server
-    # TODO should this test really check these arguments?
     assert hgrepo.push.call_args[1] == {"bookmark": None, "force_push": True}
 
 
@@ -385,7 +382,6 @@ def test_integrated_execute_job_with_bookmark(
     assert len(hgrepo.push.call_args) == 2
     assert len(hgrepo.push.call_args[0]) == 1
     assert hgrepo.push.call_args[0][0] == hg_server
-    # TODO should this test really check these arguments?
     assert hgrepo.push.call_args[1] == {"bookmark": "@", "force_push": False}
 
 
