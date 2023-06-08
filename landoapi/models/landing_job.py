@@ -173,7 +173,6 @@ class LandingJob(Base):
         """Human-readable representation of the branch head's Phabricator revision ID."""
         return f"D{self.revisions[-1].revision_id}"
 
-    # TODO `revisions` should be `revision_ids`?
     @classmethod
     def revisions_query(cls, revisions: Iterable[str]) -> flask_sqlalchemy.BaseQuery:
         """
