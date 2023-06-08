@@ -3,7 +3,6 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import base64
-import functools
 import logging
 
 from connexion import ProblemException
@@ -14,8 +13,8 @@ from flask import (
 
 from landoapi import auth
 from landoapi.models.landing_job import (
-    add_job_with_revisions,
     LandingJobStatus,
+    add_job_with_revisions,
 )
 from landoapi.models.revisions import Revision
 from landoapi.repos import get_repos_for_env

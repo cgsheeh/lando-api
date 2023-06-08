@@ -175,6 +175,7 @@ diff --git a/test.txt b/test.txt
 
 # TODO add a test for `target_cset`.
 
+
 def test_integrated_hgrepo_apply_patch(hg_clone):
     repo = HgRepo(hg_clone.strpath)
 
