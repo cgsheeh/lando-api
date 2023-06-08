@@ -129,27 +129,3 @@ class DiffWarning(Base):
             "group": self.group.value,
             "data": self.data,
         }
-
-
-class PushData(Base):
-    """Data collected from a try push."""
-
-    # TODO should we abstract out the `patches` concept from `Revision`?
-    # `Revision` really entails a built patch but also a Phab revision.
-
-    # The Git formatted patch data collected from `hg export`.
-    patch_bytes = db.Column(db.LargeBinary, nullable=False, default=b"")
-
-    # Identifier for the most descendent commit created by this landing.
-    commit_base = db.Column(db.Text(), nullable=False)
-
-    def serialize(self) -> dict[str, Any]:
-        """Return a JSON serializeable dictionary."""
-
-        return {
-            "id": self.id,
-            "patches": self.patches,
-            "commit_base": self.commit_base,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-        }
