@@ -73,9 +73,6 @@ class LandingJobAction(enum.Enum):
     CANCEL = "CANCEL"
 
 
-# TODO really we want to have "Phabricator" landing jobs and "Try" landing jobs.
-# It makes more sense to abstract away the "landing job" concept to include
-# landing non-Phabricator jobs to the database.
 class LandingJob(Base):
     """State for a landing job."""
 
