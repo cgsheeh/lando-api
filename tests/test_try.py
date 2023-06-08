@@ -86,11 +86,3 @@ def test_try_api_success(
     assert worker.run_job(job, repo, hgrepo, treestatus)
     assert job.status == LandingJobStatus.LANDED
     assert len(job.landed_commit_id) == 40
-
-
-def test_scm_level_1_enforce():
-    """Test the scm_level_1 enforcement/error handling.
-
-    TODO should we make the enforcement more generic? Part of the auth0 decorator?
-    """
-    raise NotImplemented("TODO")
