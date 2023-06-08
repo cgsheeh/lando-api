@@ -87,7 +87,8 @@ def post(data: dict):
     # Add a landing job for this try push.
     ldap_username = g.auth0_user.email
     revisions = [
-        # TODO do something more useful with `patch_data`.
+        # TODO do something more useful with `patch_data`, maybe gather data from
+        # rs-parsepatch??
         Revision(patch_bytes=base64.b64decode(patch.encode("ascii")), patch_data={})
         for patch in patches
     ]
