@@ -291,7 +291,6 @@ def test_integrated_execute_job(
     ), "Successful landing should trigger Phab repo update."
 
 
-# TODO make this actually test force push
 def test_integrated_execute_job_with_force_push(
     app,
     db,
