@@ -53,12 +53,10 @@ class Revision(Base):
     """
 
     # revision_id and diff_id map to Phabricator IDs (integers).
-    # TODO confirm this being nullable doesn't cause any problems.
     revision_id = db.Column(db.Integer, nullable=True, unique=True)
 
     # diff_id is that of the latest diff on the revision at landing request time. It
     # does not track all diffs.
-    # TODO confirm this being nullable doesn't cause any problems.
     diff_id = db.Column(db.Integer, nullable=True)
 
     # The actual patch.
