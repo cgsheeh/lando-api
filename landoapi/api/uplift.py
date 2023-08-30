@@ -81,7 +81,7 @@ def create(phab: PhabricatorClient, data: dict):
         )
         return problem(
             404,
-            "Revision not found",
+            "Could not validate uplift state from Conduit.",
             err.args[0],
             type="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
         )
