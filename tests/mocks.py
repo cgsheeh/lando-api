@@ -311,6 +311,7 @@ class PhabricatorDouble:
             "fields": {
                 "repositoryPHID": repo["phid"] if repo is not None else None,
                 "uplift.request": uplift,
+                "uri": uri,
             },
             "sourcePath": None,
             # projectPHIDs is left for backwards compatibility for older tests, though
@@ -1001,6 +1002,7 @@ class PhabricatorDouble:
                     "policy": {"view": "public", "edit": "users"},
                     "bugzilla.bug-id": bug_id,
                     "uplift.request": uplift,
+                    "uri": i["uri"],
                 },
                 "attachments": {},
             }
