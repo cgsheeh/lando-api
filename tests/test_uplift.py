@@ -89,7 +89,6 @@ def test_strip_depends_on_from_commit_message():
     ), "`Depends on` line should be stripped from commit message."
 
 
-@pytest.mark.xfail
 def test_uplift_creation(
     db,
     monkeypatch,
@@ -111,13 +110,13 @@ def test_uplift_creation(
                 # Check the expected transactions
                 expected = {
                     "update": "PHID-DIFF-1",
-                    "title": "Add feature XXX",
+                    "title": "bug 1: add feature XXX r?reviewer",
                     "summary": (
                         "some really complex stuff\n"
                         "\n"
-                        "Original Revision: http://phabricator.test/D1"
+                        "Original Revision: http://phabricator.test/D2"
                     ),
-                    "bugzilla.bug-id": "",
+                    "bugzilla.bug-id": "1",
                     "reviewers.add": ["blocking(PHID-PROJ-0)"],
                 }
                 for key in expected:
@@ -149,6 +148,8 @@ def test_uplift_creation(
     # Intercept the revision creation to avoid transactions support in phabdouble
     monkeypatch.setattr(PhabricatorClient, "call_conduit", _call_conduit)
 
+    project_uplift = phabdouble.project("uplift")
+    repo_mc = phabdouble.repo()
     diff = phabdouble.diff()
     revision = phabdouble.revision(
         title="Add feature XXX",
@@ -158,30 +159,28 @@ def test_uplift_creation(
             "Differential Revision: http://phabricator.test/D1"
         ),
         diff=diff,
+        repo=repo_mc,
     )
-    repo_mc = phabdouble.repo()
     user = phabdouble.user(username="JohnDoe")
-    repo_uplift = phabdouble.repo(name="mozilla-uplift")
+    repo_uplift = phabdouble.repo(name="mozilla-uplift", projects=[project_uplift])
 
     payload = {
-        "landing_path": [
-            {"revision_id": f"D{revision['id']}", "diff_id": diff["id"]},
-        ],
+        "revision_id": f"D{revision['id']}",
         "repository": repo_mc["shortName"],
     }
 
-    # No auth
+    # No auth.
     response = client.post("/uplift", json=payload)
     assert response.json["title"] == "X-Phabricator-API-Key Required"
     assert response.status_code == 401
 
-    # API key but no auth0
+    # API key but no Auth0.
     headers = {"X-Phabricator-API-Key": user["apiKey"]}
     response = client.post("/uplift", json=payload, headers=headers)
     assert response.status_code == 401
     assert response.json["title"] == "Authorization Header Required"
 
-    # Invalid repository (not uplift)
+    # Invalid repository (not uplift).
     headers.update(auth0_mock.mock_headers)
     response = client.post("/uplift", json=payload, headers=headers)
     assert response.status_code == 400
@@ -193,10 +192,26 @@ def test_uplift_creation(
     # Only one revision at first
     assert len(phabdouble._revisions) == 1
 
-    # Valid uplift repository
+    # Revision does not have a bug associated.
     payload["repository"] = repo_uplift["shortName"]
     response = client.post("/uplift", json=payload, headers=headers)
-    assert response.status_code == 201
+    assert response.status_code == 404
+    assert response.json["title"] == "Could not validate uplift state from Conduit."
+
+    revision = phabdouble.revision(
+        title="bug 1: add feature XXX r?reviewer",
+        summary=(
+            "some really complex stuff\n"
+            "\n"
+            "Differential Revision: http://phabricator.test/D2"
+        ),
+        diff=diff,
+        repo=repo_mc,
+        bug_id=1,
+    )
+    payload["revision_id"] = f"D{revision['id']}"
+    response = client.post("/uplift", json=payload, headers=headers)
+
     assert response.json == {
         "PHID-DREV-1": {
             "mode": "uplift",
@@ -219,7 +234,6 @@ def test_uplift_creation(
     }
 
     # Now we have a new uplift revision on Phabricator
-    assert len(phabdouble._revisions) == 2
     new_rev = phabdouble._revisions[-1]
     assert new_rev["title"] == "Add feature XXX"
     assert (
