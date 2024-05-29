@@ -474,7 +474,6 @@ class DiffAssessor:
                 "git-format-patch -k to avoid this."
             )
 
-        # TODO Get this from v-c-t
         if INVALID_REVIEW_FLAG_RE.search(firstline):
             return (
                 "Revision contains 'r?' in the commit message. Please use 'r=' instead."
