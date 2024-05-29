@@ -393,6 +393,18 @@ class GitPatchHelper(PatchHelper):
         return get_timestamp_from_git_date_header(date)
 
 
+ACCEPTABLE_MESSAGE_FORMAT_RES = [
+    re.compile(format, re.I)
+    for format in [
+        r"bug [0-9]+",
+        r"no bug",
+        r"^(back(ing|ed)?\s+out|backout).*(\s+|\:)[0-9a-f]{12}",
+        r"^(revert(ed|ing)?).*(\s+|\:)[0-9a-f]{12}",
+        r"^add(ed|ing)? tag",
+    ]
+]
+
+
 # Decimal notation for the `symlink` file mode.
 SYMLINK_MODE = 40960
 
@@ -437,6 +449,54 @@ class DiffAssessor:
         self, commit_message: str, repo: Optional[Repo] = None
     ) -> Optional[str]:
         """Check the format of the passed commit message for issues."""
+        firstline = commit_message.splitlines()[0]
+
+        # Ensure backout commit descriptions are well formed.
+        # TODO move the commitparser code into Lando
+        if commitparser.is_backout(firstline):
+            backouts = commitparser.parse_backouts(firstline, strict=True)
+            if not backouts:
+                return "Revision has malformed backout message."
+            nodes, bugs = backouts
+            if not nodes:
+                return "Revision is a backout but commit message does not indicate backed out revisions."
+
+        # TODO get user in a Lando/Phab way.
+        if c.user() in [b"ffxbld", b"seabld", b"tbirdbld", b"cltbld"]:
+            return
+
+        # Match against [PATCH] and [PATCH n/m].
+        if b"[PATCH" in firstline:
+            return (
+                "Revision contains git-format-patch '[PATCH]' cruft. Use "
+                "git-format-patch -k to avoid this."
+            )
+
+        # TODO Get this from v-c-t
+        if INVALID_REVIEW_FLAG_RE.search(firstline):
+            return (
+                "Revision contains 'r?' in the commit message. Please use 'r=' instead."
+            )
+
+        if any(regex.search(firstline) for regex in ACCEPTABLE_MESSAGE_FORMAT_RES):
+            # Exit if the commit message matches any of our acceptable formats.
+            # Conditions after this are failure states.
+            return
+
+        if firstline.lower().startswith((b"merge", b"merging", b"automated merge")):
+            # TODO how to check if a commit is a merge? I guess this will only need to
+            # run for the landing time checks?
+            if len(c.parents()) == 2:
+                return
+
+            return "Revision claims to be a merge, but it has only one parent."
+
+        if firstline.lower().startswith((b"back", b"revert")):
+            # Purposely ambiguous: it's ok to say "backed out rev N" or
+            # "reverted to rev N-1"
+            return "Backout revision needs a bug number or a rev id."
+
+        return "Revision needs 'Bug N' or 'No bug' in the commit message."
 
     def run_diff_checks(self, repo: Repo) -> list[str]:
         """Execute the set of checks on the diffs."""
