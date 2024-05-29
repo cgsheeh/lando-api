@@ -433,6 +433,11 @@ class DiffAssessor:
             if parsed["filename"] == "try_task_config.json":
                 return "Revision introduces the `try_task_config.json` file."
 
+    def check_commit_message(
+        self, commit_message: str, repo: Optional[Repo] = None
+    ) -> Optional[str]:
+        """Check the format of the passed commit message for issues."""
+
     def run_diff_checks(self, repo: Repo) -> list[str]:
         """Execute the set of checks on the diffs."""
         issues = []
