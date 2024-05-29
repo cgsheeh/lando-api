@@ -403,6 +403,7 @@ ACCEPTABLE_MESSAGE_FORMAT_RES = [
         r"^add(ed|ing)? tag",
     ]
 ]
+INVALID_REVIEW_FLAG_RE = re.compile(r"[\s.;]r\?(?:\w|$)")
 
 
 # Decimal notation for the `symlink` file mode.
@@ -457,6 +458,7 @@ class DiffAssessor:
             backouts = commitparser.parse_backouts(firstline, strict=True)
             if not backouts:
                 return "Revision has malformed backout message."
+
             nodes, bugs = backouts
             if not nodes:
                 return "Revision is a backout but commit message does not indicate backed out revisions."
