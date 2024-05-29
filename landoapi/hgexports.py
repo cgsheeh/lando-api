@@ -464,11 +464,11 @@ class DiffAssessor:
                 return "Revision is a backout but commit message does not indicate backed out revisions."
 
         # TODO get user in a Lando/Phab way.
-        if c.user() in [b"ffxbld", b"seabld", b"tbirdbld", b"cltbld"]:
+        if c.user() in {"ffxbld", "seabld", "tbirdbld", "cltbld"}:
             return
 
         # Match against [PATCH] and [PATCH n/m].
-        if b"[PATCH" in firstline:
+        if "[PATCH" in firstline:
             return (
                 "Revision contains git-format-patch '[PATCH]' cruft. Use "
                 "git-format-patch -k to avoid this."
@@ -485,7 +485,7 @@ class DiffAssessor:
             # Conditions after this are failure states.
             return
 
-        if firstline.lower().startswith((b"merge", b"merging", b"automated merge")):
+        if firstline.lower().startswith(("merge", "merging", "automated merge")):
             # TODO how to check if a commit is a merge? I guess this will only need to
             # run for the landing time checks?
             if len(c.parents()) == 2:
@@ -493,7 +493,7 @@ class DiffAssessor:
 
             return "Revision claims to be a merge, but it has only one parent."
 
-        if firstline.lower().startswith((b"back", b"revert")):
+        if firstline.lower().startswith(("back", "revert")):
             # Purposely ambiguous: it's ok to say "backed out rev N" or
             # "reverted to rev N-1"
             return "Backout revision needs a bug number or a rev id."
