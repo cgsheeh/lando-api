@@ -546,6 +546,7 @@ class DiffAssessor:
     """
 
     parsed_diff: list[dict]
+    author: Optional[str] = None
     commit_message: Optional[str] = None
     repo: Optional[Repo] = None
 
@@ -574,7 +575,7 @@ class DiffAssessor:
             if parsed["filename"] == "try_task_config.json":
                 return "Revision introduces the `try_task_config.json` file."
 
-    def check_commit_message(self, user: str, is_merge: bool = False) -> Optional[str]:
+    def check_commit_message(self, is_merge: bool = False) -> Optional[str]:
         """Check the format of the passed commit message for issues."""
         if self.repo and self.repo.tree == "try":
             return
@@ -595,7 +596,7 @@ class DiffAssessor:
                 return "Revision is a backout but commit message does not indicate backed out revisions."
 
         # Avoid checks for the merge automation user.
-        if user in {"ffxbld", "seabld", "tbirdbld", "cltbld"}:
+        if self.author in {"ffxbld", "seabld", "tbirdbld", "cltbld"}:
             return
 
         # Match against [PATCH] and [PATCH n/m].
