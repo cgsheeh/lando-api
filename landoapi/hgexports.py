@@ -577,6 +577,9 @@ class DiffAssessor:
         self, commit_message: str, user: str, is_merge: bool = False
     ) -> Optional[str]:
         """Check the format of the passed commit message for issues."""
+        if self.repo and self.repo.tree == "try":
+            return
+
         firstline = commit_message.splitlines()[0]
 
         # Ensure backout commit descriptions are well formed.
