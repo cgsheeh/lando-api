@@ -573,7 +573,9 @@ class DiffAssessor:
             if parsed["filename"] == "try_task_config.json":
                 return "Revision introduces the `try_task_config.json` file."
 
-    def check_commit_message(self, commit_message: str, user: str) -> Optional[str]:
+    def check_commit_message(
+        self, commit_message: str, user: str, is_merge: bool = False
+    ) -> Optional[str]:
         """Check the format of the passed commit message for issues."""
         firstline = commit_message.splitlines()[0]
 
@@ -609,9 +611,8 @@ class DiffAssessor:
             return
 
         if firstline.lower().startswith(("merge", "merging", "automated merge")):
-            # TODO how to check if a commit is a merge? I guess this will only need to
-            # run for the landing time checks?
-            if len(c.parents()) == 2:
+            # TODO is adding a kwarg the right thing here?
+            if is_merge:
                 return
 
             return "Revision claims to be a merge, but it has only one parent."
