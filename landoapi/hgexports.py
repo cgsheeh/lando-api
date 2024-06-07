@@ -546,6 +546,7 @@ class DiffAssessor:
     """
 
     parsed_diff: list[dict]
+    commit_message: Optional[str] = None
     repo: Optional[Repo] = None
 
     def check_prevent_symlinks(self) -> Optional[str]:
@@ -573,14 +574,15 @@ class DiffAssessor:
             if parsed["filename"] == "try_task_config.json":
                 return "Revision introduces the `try_task_config.json` file."
 
-    def check_commit_message(
-        self, commit_message: str, user: str, is_merge: bool = False
-    ) -> Optional[str]:
+    def check_commit_message(self, user: str, is_merge: bool = False) -> Optional[str]:
         """Check the format of the passed commit message for issues."""
         if self.repo and self.repo.tree == "try":
             return
 
-        firstline = commit_message.splitlines()[0]
+        if not self.commit_message:
+            return
+
+        firstline = self.commit_message.splitlines()[0]
 
         # Ensure backout commit descriptions are well formed.
         if is_backout(firstline):
