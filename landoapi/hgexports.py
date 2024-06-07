@@ -573,7 +573,7 @@ class DiffAssessor:
             if parsed["filename"] == "try_task_config.json":
                 return "Revision introduces the `try_task_config.json` file."
 
-    def check_commit_message(self, commit_message: str) -> Optional[str]:
+    def check_commit_message(self, commit_message: str, user: str) -> Optional[str]:
         """Check the format of the passed commit message for issues."""
         firstline = commit_message.splitlines()[0]
 
@@ -587,8 +587,8 @@ class DiffAssessor:
             if not nodes:
                 return "Revision is a backout but commit message does not indicate backed out revisions."
 
-        # TODO get user in a Lando/Phab way.
-        if c.user() in {"ffxbld", "seabld", "tbirdbld", "cltbld"}:
+        # Avoid checks for the merge automation user.
+        if user in {"ffxbld", "seabld", "tbirdbld", "cltbld"}:
             return
 
         # Match against [PATCH] and [PATCH n/m].
