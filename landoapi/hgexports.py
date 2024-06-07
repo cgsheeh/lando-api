@@ -633,7 +633,11 @@ class DiffAssessor:
     def run_diff_checks(self) -> list[str]:
         """Execute the set of checks on the diffs."""
         issues = []
-        for check in (self.check_prevent_symlinks, self.check_try_task_config):
+        for check in (
+            self.check_prevent_symlinks,
+            self.check_try_task_config,
+            self.check_commit_message,
+        ):
             if issue := check():
                 issues.append(issue)
 
