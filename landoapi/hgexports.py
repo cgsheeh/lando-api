@@ -578,7 +578,6 @@ class DiffAssessor:
         firstline = commit_message.splitlines()[0]
 
         # Ensure backout commit descriptions are well formed.
-        # TODO move the commitparser code into Lando
         if is_backout(firstline):
             backouts = parse_backouts(firstline, strict=True)
             if not backouts:
